@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AF 日报 · Yaahlan / Yaha</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5b6b7c;
+      --line: #e2e8ef;
+      --accent: #0f6b5c;
+      --accent-soft: #e6f3f0;
+      --shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+      --radius: 10px;
+      --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 64px; }
+    header.hero { margin-bottom: 20px; }
+    header.hero h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    header.hero p { margin: 0; color: var(--muted); }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 550;
+    }
+    .pill.muted { background: #eef1f4; color: var(--muted); }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 8px;
+      margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 650;
+    }
+    .panel .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child,
+    th.left, td.left { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 550;
+      font-size: 12px;
+      background: #fafbfc;
+    }
+    tbody tr:hover td { background: #f8fafb; }
+    .num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; }
+    .dash { color: #9aa7b5; }
+    footer {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    footer ul { margin: 6px 0 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>AF 日报 · Yaahlan / Yaha</h1>
+      <p>AppsFlyer Cohort（User Acquisition）核心指标。数据每日北京时间 11:00 前刷新。</p>
+      <div class="meta" id="meta"></div>
+    </header>
+
+    <section class="panel">
+      <h2>1. Yaahlan 整体 · 近三日</h2>
+      <p class="sub">双端合计 · 日期 / 花费 / Install / CPI / Day0 ROAS / 次留 / Day0 Revenue / Day0 付费人数</p>
+      <div id="t1"></div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Yaahlan Android · 昨日分渠道</h2>
+      <p class="sub" id="t2-sub">渠道 / 花费 / Install / CPI / Day0 ROAS / Day0 Revenue / Day0 付费人数</p>
+      <div id="t2"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Yaha 整体 · 近三日</h2>
+      <p class="sub">双端合计 · 日期 / 花费 / Install / 注册数 / CPI / 次留 / Day0 ROAS</p>
+      <div id="t3"></div>
+    </section>
+
+    <section class="panel">
+      <h2>4. Yaha 分区 · 近三日</h2>
+      <p class="sub">Android 系列名分区（hindi→印度 / arabic→阿语区 / portuguese→巴西）</p>
+      <div id="t4"></div>
+    </section>
+
+    <footer id="notes"></footer>
+  </div>
+
+  <script type="application/json" id="report-data">
+{
+  "meta": {
+    "timezone": "UTC",
+    "currency": "USD",
+    "as_of": "2026-09-01",
+    "date_range": [
+      "2026-08-29",
+      "2026-08-30",
+      "2026-08-31"
+    ],
+    "yesterday": "2026-08-31",
+    "updated_at": "2026-09-01T03:20:00+08:00",
+    "source": "AppsFlyer MCP · Cohort UA",
+    "notes": [
+      "时区为 UTC（与 AF 面板 Asia/Shanghai 可能差日历日边界）",
+      "次留 D1：仅展示已跑完的日期（as_of 的前 2 天及更早）；未完整日显示 —",
+      "Day0 付费人数 = user_recharge Unique users (D0)",
+      "Yaha 注册数 = user_register Unique users (D0)",
+      "Yaha 分区：系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西（Android 系列）"
+    ]
+  },
+  "yaahlan_daily": [
+    {
+      "date": "2026-08-29",
+      "cost": 43477.68,
+      "installs": 30324,
+      "cpi": 1.43,
+      "d0_roas": 0.0328,
+      "d1": 0.2552,
+      "d0_revenue": 1424.88,
+      "d0_payers": 173
+    },
+    {
+      "date": "2026-08-30",
+      "cost": 41693.93,
+      "installs": 29270,
+      "cpi": 1.42,
+      "d0_roas": 0.0311,
+      "d1": 0.1503,
+      "d0_revenue": 1295.47,
+      "d0_payers": 187
+    },
+    {
+      "date": "2026-08-31",
+      "cost": 39184.81,
+      "installs": 28363,
+      "cpi": 1.38,
+      "d0_roas": 0.0276,
+      "d1": null,
+      "d0_revenue": 1080.47,
+      "d0_payers": 98
+    }
+  ],
+  "yaahlan_android_channel_yesterday": [
+    {
+      "channel": "Google",
+      "media_source": "googleadwords_int",
+      "cost": 23035.84,
+      "installs": 15276,
+      "cpi": 1.51,
+      "d0_roas": 0.0182,
+      "d0_revenue": 419.37,
+      "d0_payers": 28
+    },
+    {
+      "channel": "Facebook",
+      "media_source": "Facebook Ads",
+      "cost": 6275.27,
+      "installs": 2925,
+      "cpi": 2.15,
+      "d0_roas": 0.0305,
+      "d0_revenue": 191.1,
+      "d0_payers": 12
+    },
+    {
+      "channel": "TikTok",
+      "media_source": "tiktokglobal_int",
+      "cost": 3960.12,
+      "installs": 3547,
+      "cpi": 1.12,
+      "d0_roas": 0.0526,
+      "d0_revenue": 208.34,
+      "d0_payers": 12
+    },
+    {
+      "channel": "Xiaomi",
+      "media_source": "xiaomimipicks_int",
+      "cost": 734.4,
+      "installs": 1837,
+      "cpi": 0.4,
+      "d0_roas": 0.0063,
+      "d0_revenue": 4.66,
+      "d0_payers": 11
+    },
+    {
+      "channel": "Organic",
+      "media_source": "organic",
+      "cost": 0,
+      "installs": 2328,
+      "cpi": null,
+      "d0_roas": null,
+      "d0_revenue": 183.31,
+      "d0_payers": 6
+    }
+  ],
+  "yaha_daily": [
+    {
+      "date": "2026-08-29",
+      "cost": 1316.53,
+      "installs": 7037,
+      "registers": 5211,
+      "cpi": 0.19,
+      "d1": 0.1984,
+      "d0_roas": 0.0272
+    },
+    {
+      "date": "2026-08-30",
+      "cost": 1566.17,
+      "installs": 7189,
+      "registers": 5369,
+      "cpi": 0.22,
+      "d1": 0.1328,
+      "d0_roas": 0.0052
+    },
+    {
+      "date": "2026-08-31",
+      "cost": 1544.59,
+      "installs": 7180,
+      "registers": 3397,
+      "cpi": 0.22,
+      "d1": null,
+      "d0_roas": 0.0094
+    }
+  ],
+  "yaha_region_daily": [
+    {
+      "date": "2026-08-29",
+      "region": "印度",
+      "cost": 787.04,
+      "installs": 4979,
+      "registers": 3726,
+      "cpi": 0.16,
+      "d1": 0.2133,
+      "d0_roas": 0.0069
+    },
+    {
+      "date": "2026-08-29",
+      "region": "阿语区",
+      "cost": 233.85,
+      "installs": 834,
+      "registers": 537,
+      "cpi": 0.28,
+      "d1": 0.2374,
+      "d0_roas": 0.1216
+    },
+    {
+      "date": "2026-08-29",
+      "region": "巴西",
+      "cost": 187.78,
+      "installs": 354,
+      "registers": 235,
+      "cpi": 0.53,
+      "d1": 0.1441,
+      "d0_roas": 0.0027
+    },
+    {
+      "date": "2026-08-30",
+      "region": "印度",
+      "cost": 949.59,
+      "installs": 5202,
+      "registers": 3883,
+      "cpi": 0.18,
+      "d1": 0.1486,
+      "d0_roas": 0.0061
+    },
+    {
+      "date": "2026-08-30",
+      "region": "阿语区",
+      "cost": 270.4,
+      "installs": 753,
+      "registers": 487,
+      "cpi": 0.36,
+      "d1": 0.1275,
+      "d0_roas": 0.0015
+    },
+    {
+      "date": "2026-08-30",
+      "region": "巴西",
+      "cost": 216.78,
+      "installs": 336,
+      "registers": 230,
+      "cpi": 0.65,
+      "d1": 0.0685,
+      "d0_roas": 0.006
+    },
+    {
+      "date": "2026-08-31",
+      "region": "印度",
+      "cost": 874.57,
+      "installs": 5072,
+      "registers": 2433,
+      "cpi": 0.17,
+      "d1": null,
+      "d0_roas": 0.0058
+    },
+    {
+      "date": "2026-08-31",
+      "region": "阿语区",
+      "cost": 291.49,
+      "installs": 875,
+      "registers": 296,
+      "cpi": 0.33,
+      "d1": null,
+      "d0_roas": 0.0086
+    },
+    {
+      "date": "2026-08-31",
+      "region": "巴西",
+      "cost": 209.29,
+      "installs": 353,
+      "registers": 131,
+      "cpi": 0.59,
+      "d1": null,
+      "d0_roas": 0.0019
+    }
+  ]
+}
+  </script>
+  <script>
+    const DATA = JSON.parse(document.getElementById("report-data").textContent);
+
+    const money = (v) =>
+      v == null || v === "" ? "—" : "$" + Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const int = (v) =>
+      v == null || v === "" ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    const cpi = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
+    const pct = (v) => (v == null ? "—" : (Number(v) * 100).toFixed(2) + "%");
+    const cell = (html, left) =>
+      `<td class="num${left ? " left" : ""}">${html === "—" ? '<span class="dash">—</span>' : html}</td>`;
+
+    function table(headers, rows) {
+      const thead = headers
+        .map((h, i) => `<th class="${i === 0 || h.left ? "left" : ""}">${h.label || h}</th>`)
+        .join("");
+      const body = rows
+        .map((r) => `<tr>${r.map((c, i) => cell(c, i === 0 || headers[i]?.left)).join("")}</tr>`)
+        .join("");
+      return `<table><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    const m = DATA.meta;
+    document.getElementById("meta").innerHTML = [
+      `<span class="pill">更新 ${m.updated_at || "—"}</span>`,
+      `<span class="pill muted">as_of ${m.as_of}</span>`,
+      `<span class="pill muted">${m.timezone} · ${m.currency}</span>`,
+      `<span class="pill muted">${m.source || "AppsFlyer"}</span>`,
+    ].join("");
+
+    document.getElementById("t2-sub").textContent =
+      `昨日 ${m.yesterday} · Android · 渠道 / 花费 / Install / CPI / Day0 ROAS / Day0 Revenue / Day0 付费人数`;
+
+    document.getElementById("t1").innerHTML = table(
+      ["日期", "花费", "Install", "CPI", "Day0 ROAS", "次留", "Day0 Revenue", "Day0 付费人数"],
+      DATA.yaahlan_daily.map((r) => [
+        r.date,
+        money(r.cost),
+        int(r.installs),
+        cpi(r.cpi),
+        pct(r.d0_roas),
+        pct(r.d1),
+        money(r.d0_revenue),
+        int(r.d0_payers),
+      ])
+    );
+
+    document.getElementById("t2").innerHTML = table(
+      [{ label: "渠道", left: true }, "花费", "Install", "CPI", "Day0 ROAS", "Day0 Revenue", "Day0 付费人数"],
+      DATA.yaahlan_android_channel_yesterday.map((r) => [
+        r.channel,
+        money(r.cost),
+        int(r.installs),
+        cpi(r.cpi),
+        pct(r.d0_roas),
+        money(r.d0_revenue),
+        int(r.d0_payers),
+      ])
+    );
+
+    document.getElementById("t3").innerHTML = table(
+      ["日期", "花费", "Install", "注册数", "CPI", "次留", "Day0 ROAS"],
+      DATA.yaha_daily.map((r) => [
+        r.date,
+        money(r.cost),
+        int(r.installs),
+        int(r.registers),
+        cpi(r.cpi),
+        pct(r.d1),
+        pct(r.d0_roas),
+      ])
+    );
+
+    document.getElementById("t4").innerHTML = table(
+      ["日期", { label: "分区", left: true }, "花费", "Install", "注册数", "CPI", "次留", "Day0 ROAS"],
+      DATA.yaha_region_daily.map((r) => [
+        r.date,
+        r.region,
+        money(r.cost),
+        int(r.installs),
+        int(r.registers),
+        cpi(r.cpi),
+        pct(r.d1),
+        pct(r.d0_roas),
+      ])
+    );
+
+    document.getElementById("notes").innerHTML =
+      `<div>口径说明</div><ul>${(m.notes || []).map((n) => `<li>${n}</li>`).join("")}</ul>`;
+  </script>
+</body>
+</html>

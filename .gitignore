@@ -1,0 +1,11 @@
+.DS_Store
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+.avatar_audit/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
