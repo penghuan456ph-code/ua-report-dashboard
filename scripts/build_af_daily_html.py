@@ -24,10 +24,17 @@ def sanitize(data: dict) -> dict:
     as_of = data.get("meta", {}).get("as_of")
     if not as_of:
         return data
-    for key in ("yaahlan_daily", "yaha_daily", "yaha_region_daily"):
+    for key in ("yaahlan_daily", "yaha_daily"):
         for row in data.get(key, []):
             if "d1" in row and row.get("date") and not d1_complete(row["date"], as_of):
                 row["d1"] = None
+    # Keep only Google / Facebook / TikTok for Android channel table.
+    allowed = {"googleadwords_int", "Facebook Ads", "tiktokglobal_int"}
+    channels = data.get("yaahlan_android_channel_yesterday")
+    if isinstance(channels, list):
+        data["yaahlan_android_channel_yesterday"] = [
+            row for row in channels if row.get("media_source") in allowed
+        ]
     return data
 
 
