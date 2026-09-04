@@ -9,7 +9,7 @@
       "2026-09-03"
     ],
     "yesterday": "2026-09-03",
-    "updated_at": "2026-09-04T10:30:37+08:00",
+    "updated_at": "2026-09-04T15:47:05+08:00",
     "source": "AppsFlyer MCP · Cohort UA",
     "notes": [
       "时区为 UTC（与 AF 面板 Asia/Shanghai 可能差日历日边界）",
@@ -37,41 +37,41 @@
       "installs": 29276,
       "cpi": 1.47,
       "d0_roas": 0.0315,
-      "d1": 0.1528,
+      "d1": 0.2583,
       "d0_revenue": 1360.0,
       "d0_payers": 160
     },
     {
       "date": "2026-09-03",
-      "cost": 44224.3,
+      "cost": 44449.24,
       "installs": 28309,
-      "cpi": 1.56,
-      "d0_roas": 0.0328,
+      "cpi": 1.57,
+      "d0_roas": 0.0508,
       "d1": null,
-      "d0_revenue": 1449.07,
-      "d0_payers": 112
+      "d0_revenue": 2258.86,
+      "d0_payers": 174
     }
   ],
   "yaahlan_android_channel_yesterday": [
     {
       "channel": "Google",
       "media_source": "googleadwords_int",
-      "cost": 23844.28,
+      "cost": 24059.57,
       "installs": 14711,
-      "cpi": 1.62,
-      "d0_roas": 0.0163,
-      "d0_revenue": 388.02,
-      "d0_payers": 40
+      "cpi": 1.64,
+      "d0_roas": 0.0233,
+      "d0_revenue": 559.52,
+      "d0_payers": 61
     },
     {
       "channel": "Facebook",
       "media_source": "Facebook Ads",
-      "cost": 6271.69,
+      "cost": 6279.33,
       "installs": 3857,
       "cpi": 1.63,
-      "d0_roas": 0.0211,
-      "d0_revenue": 132.65,
-      "d0_payers": 12
+      "d0_roas": 0.0074,
+      "d0_revenue": 46.5,
+      "d0_payers": 19
     },
     {
       "channel": "TikTok",
@@ -79,9 +79,9 @@
       "cost": 7913.17,
       "installs": 3194,
       "cpi": 2.48,
-      "d0_roas": 0.0188,
-      "d0_revenue": 148.47,
-      "d0_payers": 15
+      "d0_roas": 0.0048,
+      "d0_revenue": 38.01,
+      "d0_payers": 22
     }
   ],
   "yaha_daily": [
@@ -100,28 +100,28 @@
       "installs": 6611,
       "registers": 4661,
       "cpi": 0.22,
-      "d1": 0.1466,
+      "d1": 0.2098,
       "d0_roas": 0.0069
     },
     {
       "date": "2026-09-03",
-      "cost": 1278.36,
+      "cost": 1279.41,
       "installs": 5948,
-      "registers": 2744,
-      "cpi": 0.21,
+      "registers": 4337,
+      "cpi": 0.22,
       "d1": null,
-      "d0_roas": 0.0042
+      "d0_roas": 0.0062
     }
   ],
   "yaha_region_summary": [
     {
       "region": "印度",
-      "cost": 2238.44,
+      "cost": 2238.9,
       "installs": 14167,
-      "registers": 9339,
+      "registers": 10438,
       "cpi": 0.16,
-      "d1": 0.1729,
-      "d0_roas": 0.0077,
+      "d1": 0.1815,
+      "d0_roas": 0.0086,
       "period": [
         "2026-09-01",
         "2026-09-03"
@@ -129,11 +129,11 @@
     },
     {
       "region": "阿语区",
-      "cost": 945.85,
+      "cost": 946.27,
       "installs": 2730,
-      "registers": 1311,
+      "registers": 1562,
       "cpi": 0.35,
-      "d1": 0.1626,
+      "d1": 0.1568,
       "d0_roas": 0.0006,
       "period": [
         "2026-09-01",
@@ -142,12 +142,12 @@
     },
     {
       "region": "巴西",
-      "cost": 593.83,
+      "cost": 593.89,
       "installs": 1023,
-      "registers": 609,
+      "registers": 719,
       "cpi": 0.58,
-      "d1": 0.1183,
-      "d0_roas": 0.0075,
+      "d1": 0.1065,
+      "d0_roas": 0.0084,
       "period": [
         "2026-09-01",
         "2026-09-03"
