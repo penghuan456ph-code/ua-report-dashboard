@@ -91,6 +91,17 @@
       font-size: 12px;
       background: #fafbfc;
     }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover { color: var(--text); }
+    th.sortable .sort-ind {
+      margin-left: 4px;
+      font-size: 10px;
+      opacity: 0.35;
+    }
+    th.sortable.sorted .sort-ind { opacity: 1; color: var(--text); }
     tbody tr:hover td { background: #f8fafb; }
     .num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; }
     td.alert {
@@ -134,7 +145,7 @@
 
     <section class="panel">
       <h2>4. Yaha 分区 · 近三日分日</h2>
-      <p class="sub">Android 系列名分区（hindi→印度 / arabic→阿语区 / portuguese→巴西）· 日期×分区 · 最新日同分区相对前日变动&gt;20% 标红</p>
+      <p class="sub">Android 系列名分区（hindi→印度 / arabic→阿语区 / portuguese→巴西）· 日期×分区 · 点击表头升降序 · 最新日同分区相对前日变动&gt;20% 标红</p>
       <div id="t4"></div>
     </section>
 
@@ -452,22 +463,75 @@
     for (const r of regionRows) {
       if (r.date !== yesterday) prevByRegion[r.region] = r;
     }
-    document.getElementById("t4").innerHTML = table(
-      ["日期", { label: "分区", left: true }, "花费", "Install", "注册数", "CPI", "次留", "Day0 ROAS"],
-      regionRows.map((r) => {
-        const prev = r.date === yesterday ? prevByRegion[r.region] : null;
-        return [
-          r.date,
-          r.region,
-          maybeAlert(money(r.cost), prev && swung(r.cost, prev.cost)),
-          maybeAlert(int(r.installs), prev && swung(r.installs, prev.installs)),
-          maybeAlert(int(r.registers), prev && swung(r.registers, prev.registers)),
-          maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi)),
-          pct(r.d1),
-          pct(r.d0_roas),
-        ];
-      })
-    );
+
+    const regionCols = [
+      { key: "date", label: "日期", type: "str", left: true },
+      { key: "region", label: "分区", type: "str", left: true },
+      { key: "cost", label: "花费", type: "num" },
+      { key: "installs", label: "Install", type: "num" },
+      { key: "registers", label: "注册数", type: "num" },
+      { key: "cpi", label: "CPI", type: "num" },
+      { key: "d1", label: "次留", type: "num" },
+      { key: "d0_roas", label: "Day0 ROAS", type: "num" },
+    ];
+    let regionSort = { key: "date", dir: 1 };
+
+    function regionCellValue(r, key) {
+      const prev = r.date === yesterday ? prevByRegion[r.region] : null;
+      if (key === "date") return r.date;
+      if (key === "region") return r.region;
+      if (key === "cost") return maybeAlert(money(r.cost), prev && swung(r.cost, prev.cost));
+      if (key === "installs") return maybeAlert(int(r.installs), prev && swung(r.installs, prev.installs));
+      if (key === "registers") return maybeAlert(int(r.registers), prev && swung(r.registers, prev.registers));
+      if (key === "cpi") return maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi));
+      if (key === "d1") return pct(r.d1);
+      if (key === "d0_roas") return pct(r.d0_roas);
+      return "—";
+    }
+
+    function cmpRegion(a, b, key, type, dir) {
+      const av = a[key];
+      const bv = b[key];
+      const aNull = av == null || av === "";
+      const bNull = bv == null || bv === "";
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      if (type === "num") return (Number(av) - Number(bv)) * dir;
+      return String(av).localeCompare(String(bv), "zh") * dir;
+    }
+
+    function renderRegionTable() {
+      const sorted = [...regionRows].sort((a, b) =>
+        cmpRegion(a, b, regionSort.key, regionCols.find((c) => c.key === regionSort.key).type, regionSort.dir)
+      );
+      const thead = regionCols
+        .map((c) => {
+          const active = regionSort.key === c.key;
+          const ind = active ? (regionSort.dir === 1 ? "▲" : "▼") : "↕";
+          const cls = `sortable${c.left ? " left" : ""}${active ? " sorted" : ""}`;
+          return `<th class="${cls}" data-key="${c.key}"><span>${c.label}</span><span class="sort-ind">${ind}</span></th>`;
+        })
+        .join("");
+      const body = sorted
+        .map((r) => {
+          const cells = regionCols.map((c) => cell(regionCellValue(r, c.key), !!c.left)).join("");
+          return `<tr>${cells}</tr>`;
+        })
+        .join("");
+      const el = document.getElementById("t4");
+      el.innerHTML = `<table><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table>`;
+      el.querySelectorAll("th.sortable").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.getAttribute("data-key");
+          if (regionSort.key === key) regionSort.dir *= -1;
+          else regionSort = { key, dir: key === "date" || key === "region" ? 1 : -1 };
+          renderRegionTable();
+        });
+      });
+    }
+    renderRegionTable();
+
 
     document.getElementById("notes").innerHTML =
       `<div>口径说明</div><ul>${(m.notes || []).map((n) => `<li>${n}</li>`).join("")}</ul>`;
