@@ -29,10 +29,10 @@ App：
 5. Yaha 整体近三日（Date）  
    Cost, Installs, eCPI, ROAS D0, Retention D1  
 6. Yaha 注册（Date + `user_register` Unique users D0）  
-7. Yaha Android **近三日汇总** Campaign（不要按 Date 拆）  
+7. Yaha Android **近三日分日**（Date + Campaign）  
    Cost / Installs / ROAS / Retention + `user_register` UU  
    分区：系列名含 `hindi`→印度，`arabic`→阿语区，`portuguese`→巴西  
-   写入 `yaha_region_summary`（不分日）；按安装加权次留，按花费加权 ROAS
+   写入 `yaha_region_daily`（按日×分区）；按安装加权次留，按花费加权 ROAS
 
 渠道展示名：
 - googleadwords_int → Google  
@@ -41,8 +41,35 @@ App：
 
 ## JSON 结构要点
 - `yaahlan_android_channel_yesterday`：仅 Google / Facebook / TikTok 三行
-- `yaha_region_summary`：分区汇总数组（字段含 region / cost / installs / registers / cpi / d1 / d0_roas / period），**不要**再用 `yaha_region_daily`
+- `yaha_region_daily`：分区分日数组（字段含 date / region / cost / installs / registers / cpi / d1 / d0_roas），**不要**再用 `yaha_region_summary`
 
 ## 写回
 1. 覆盖写入 `data/af-daily-report.json`（结构与现文件一致）  
 2. 运行：`python3 scripts/build_af_daily_html.py`
+
+## 推荐：GitHub Actions 自动刷新（不依赖 Cursor 团队 MCP）
+
+定时任务走 **GitHub Actions**，用 Bearer Token 直连 AppsFlyer MCP，无需 Cursor Admin 权限。
+
+### 一次性配置
+
+1. GitHub 仓库 → **Settings → Secrets and variables → Actions → New repository secret**
+2. Name：`APPSFLYER_MCP_TOKEN`
+3. Value：AppsFlyer **Security Center → AppsFlyer Tokens** 生成的 MCP Token（可带或不带 `Bearer ` 前缀）
+
+### 运行方式
+
+- Workflow：`.github/workflows/af-daily-report.yml`
+- 脚本：`python3 scripts/refresh_af_daily_report.py`
+- 默认每天 **UTC 02:30**（北京时间 10:30）自动跑
+- 也可在 GitHub **Actions → AF Daily Report Refresh → Run workflow** 手动触发
+
+### 本地测试
+
+```bash
+export APPSFLYER_MCP_TOKEN='Bearer YOUR_TOKEN'
+python3 scripts/refresh_af_daily_report.py
+python3 scripts/build_af_daily_html.py
+```
+
+Cursor Automation 可保留作备用，或设为 Inactive 避免重复刷新。

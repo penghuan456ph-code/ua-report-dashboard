@@ -24,7 +24,7 @@ def sanitize(data: dict) -> dict:
     as_of = data.get("meta", {}).get("as_of")
     if not as_of:
         return data
-    for key in ("yaahlan_daily", "yaha_daily"):
+    for key in ("yaahlan_daily", "yaha_daily", "yaha_region_daily"):
         for row in data.get(key, []):
             if "d1" in row and row.get("date") and not d1_complete(row["date"], as_of):
                 row["d1"] = None

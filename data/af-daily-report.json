@@ -17,8 +17,8 @@
       "Day0 付费人数 = user_recharge Unique users (D0)",
       "Yaha 注册数 = user_register Unique users (D0)",
       "Yaahlan Android 分渠道仅展示 Google / Facebook / TikTok",
-      "Yaha 分区为近三日汇总（非分日）；系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西；次留按安装加权，ROAS 按花费加权",
-      "分日表最新一日：花费 / Install / 注册数 / CPI 相对前一日变动超过 20% 时该单元格标红"
+      "Yaha 分区为近三日分日（Date×分区）；系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西；次留按安装加权，ROAS 按花费加权",
+      "分日表最新一日：花费 / Install / 注册数 / CPI 相对前一日（分区表按同分区）变动超过 20% 时该单元格标红"
     ]
   },
   "yaahlan_daily": [
@@ -114,45 +114,96 @@
       "d0_roas": 0.0025
     }
   ],
-  "yaha_region_summary": [
+  "yaha_region_daily": [
     {
+      "date": "2026-09-05",
       "region": "印度",
-      "cost": 1949.33,
-      "installs": 8929,
-      "registers": 6082,
-      "cpi": 0.22,
-      "d1": 0.1827,
-      "d0_roas": 0.0061,
-      "period": [
-        "2026-09-05",
-        "2026-09-07"
-      ]
+      "cost": 689.57,
+      "installs": 3598,
+      "registers": 2683,
+      "cpi": 0.19,
+      "d1": 0.2062,
+      "d0_roas": 0.007
     },
     {
+      "date": "2026-09-05",
       "region": "阿语区",
-      "cost": 833.92,
-      "installs": 2595,
-      "registers": 1327,
-      "cpi": 0.32,
-      "d1": 0.1622,
-      "d0_roas": 0.0013,
-      "period": [
-        "2026-09-05",
-        "2026-09-07"
-      ]
+      "cost": 270.64,
+      "installs": 911,
+      "registers": 524,
+      "cpi": 0.3,
+      "d1": 0.1877,
+      "d0_roas": 0.0015
     },
     {
+      "date": "2026-09-05",
       "region": "巴西",
-      "cost": 636.93,
-      "installs": 1036,
-      "registers": 615,
+      "cost": 202.43,
+      "installs": 353,
+      "registers": 241,
+      "cpi": 0.57,
+      "d1": 0.1445,
+      "d0_roas": 0.0069
+    },
+    {
+      "date": "2026-09-06",
+      "region": "印度",
+      "cost": 646.13,
+      "installs": 3016,
+      "registers": 2265,
+      "cpi": 0.21,
+      "d1": 0.2231,
+      "d0_roas": 0.0067
+    },
+    {
+      "date": "2026-09-06",
+      "region": "阿语区",
+      "cost": 272.66,
+      "installs": 862,
+      "registers": 509,
+      "cpi": 0.32,
+      "d1": 0.2239,
+      "d0_roas": 0.0022
+    },
+    {
+      "date": "2026-09-06",
+      "region": "巴西",
+      "cost": 213.84,
+      "installs": 348,
+      "registers": 247,
       "cpi": 0.61,
-      "d1": 0.1129,
-      "d0_roas": 0.0075,
-      "period": [
-        "2026-09-05",
-        "2026-09-07"
-      ]
+      "d1": 0.1351,
+      "d0_roas": 0.0158
+    },
+    {
+      "date": "2026-09-07",
+      "region": "印度",
+      "cost": 614.13,
+      "installs": 2315,
+      "registers": 1669,
+      "cpi": 0.27,
+      "d1": null,
+      "d0_roas": 0.005
+    },
+    {
+      "date": "2026-09-07",
+      "region": "阿语区",
+      "cost": 291.15,
+      "installs": 822,
+      "registers": 491,
+      "cpi": 0.35,
+      "d1": null,
+      "d0_roas": 0.0007
+    },
+    {
+      "date": "2026-09-07",
+      "region": "巴西",
+      "cost": 220.76,
+      "installs": 335,
+      "registers": 231,
+      "cpi": 0.66,
+      "d1": null,
+      "d0_roas": null
     }
   ]
 }
