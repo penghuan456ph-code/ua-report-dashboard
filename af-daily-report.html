@@ -93,6 +93,10 @@
     }
     tbody tr:hover td { background: #f8fafb; }
     .num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; }
+    td.alert {
+      color: #c62828;
+      font-weight: 600;
+    }
     .dash { color: #9aa7b5; }
     footer {
       margin-top: 8px;
@@ -112,7 +116,7 @@
 
     <section class="panel">
       <h2>1. Yaahlan 整体 · 近三日</h2>
-      <p class="sub">双端合计 · 日期 / 花费 / Install / CPI / Day0 ROAS / 次留 / Day0 Revenue / Day0 付费人数</p>
+      <p class="sub">双端合计 · 日期 / 花费 / Install / CPI / Day0 ROAS / 次留 / Day0 Revenue / Day0 付费人数 · 最新日相对前日变动&gt;20% 标红</p>
       <div id="t1"></div>
     </section>
 
@@ -124,7 +128,7 @@
 
     <section class="panel">
       <h2>3. Yaha 整体 · 近三日</h2>
-      <p class="sub">双端合计 · 日期 / 花费 / Install / 注册数 / CPI / 次留 / Day0 ROAS</p>
+      <p class="sub">双端合计 · 日期 / 花费 / Install / 注册数 / CPI / 次留 / Day0 ROAS · 最新日相对前日变动&gt;20% 标红</p>
       <div id="t3"></div>
     </section>
 
@@ -157,7 +161,8 @@
       "Day0 付费人数 = user_recharge Unique users (D0)",
       "Yaha 注册数 = user_register Unique users (D0)",
       "Yaahlan Android 分渠道仅展示 Google / Facebook / TikTok",
-      "Yaha 分区为近三日汇总（非分日）；系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西；次留按安装加权，ROAS 按花费加权"
+      "Yaha 分区为近三日汇总（非分日）；系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西；次留按安装加权，ROAS 按花费加权",
+      "分日表最新一日：花费 / Install / 注册数 / CPI 相对前一日变动超过 20% 时该单元格标红"
     ]
   },
   "yaahlan_daily": [
@@ -305,8 +310,21 @@
       v == null || v === "" ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 });
     const cpi = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
     const pct = (v) => (v == null ? "—" : (Number(v) * 100).toFixed(2) + "%");
-    const cell = (html, left) =>
-      `<td class="num${left ? " left" : ""}">${html === "—" ? '<span class="dash">—</span>' : html}</td>`;
+    const SWING_THRESHOLD = 0.2;
+    const swung = (curr, prev) => {
+      if (curr == null || prev == null) return false;
+      const p = Number(prev);
+      const c = Number(curr);
+      if (!Number.isFinite(p) || !Number.isFinite(c) || p === 0) return false;
+      return Math.abs(c - p) / Math.abs(p) > SWING_THRESHOLD;
+    };
+    const maybeAlert = (html, alert) => (alert ? { html, alert: true } : html);
+    const cell = (c, left) => {
+      const html = c && typeof c === "object" ? c.html : c;
+      const alert = !!(c && typeof c === "object" && c.alert);
+      const cls = `num${left ? " left" : ""}${alert ? " alert" : ""}`;
+      return `<td class="${cls}">${html === "—" ? '<span class="dash">—</span>' : html}</td>`;
+    };
 
     function table(headers, rows) {
       const thead = headers
@@ -329,18 +347,22 @@
     document.getElementById("t2-sub").textContent =
       `昨日 ${m.yesterday} · Android · 仅 Google / Facebook / TikTok · 花费 / Install / CPI / Day0 ROAS / Day0 Revenue / Day0 付费人数`;
 
+    const yaahlanDaily = DATA.yaahlan_daily || [];
     document.getElementById("t1").innerHTML = table(
       ["日期", "花费", "Install", "CPI", "Day0 ROAS", "次留", "Day0 Revenue", "Day0 付费人数"],
-      DATA.yaahlan_daily.map((r) => [
-        r.date,
-        money(r.cost),
-        int(r.installs),
-        cpi(r.cpi),
-        pct(r.d0_roas),
-        pct(r.d1),
-        money(r.d0_revenue),
-        int(r.d0_payers),
-      ])
+      yaahlanDaily.map((r, i) => {
+        const prev = i === yaahlanDaily.length - 1 && i > 0 ? yaahlanDaily[i - 1] : null;
+        return [
+          r.date,
+          maybeAlert(money(r.cost), prev && swung(r.cost, prev.cost)),
+          maybeAlert(int(r.installs), prev && swung(r.installs, prev.installs)),
+          maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi)),
+          pct(r.d0_roas),
+          pct(r.d1),
+          money(r.d0_revenue),
+          int(r.d0_payers),
+        ];
+      })
     );
 
     document.getElementById("t2").innerHTML = table(
@@ -356,17 +378,21 @@
       ])
     );
 
+    const yahaDaily = DATA.yaha_daily || [];
     document.getElementById("t3").innerHTML = table(
       ["日期", "花费", "Install", "注册数", "CPI", "次留", "Day0 ROAS"],
-      DATA.yaha_daily.map((r) => [
-        r.date,
-        money(r.cost),
-        int(r.installs),
-        int(r.registers),
-        cpi(r.cpi),
-        pct(r.d1),
-        pct(r.d0_roas),
-      ])
+      yahaDaily.map((r, i) => {
+        const prev = i === yahaDaily.length - 1 && i > 0 ? yahaDaily[i - 1] : null;
+        return [
+          r.date,
+          maybeAlert(money(r.cost), prev && swung(r.cost, prev.cost)),
+          maybeAlert(int(r.installs), prev && swung(r.installs, prev.installs)),
+          maybeAlert(int(r.registers), prev && swung(r.registers, prev.registers)),
+          maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi)),
+          pct(r.d1),
+          pct(r.d0_roas),
+        ];
+      })
     );
 
     const regionRows = DATA.yaha_region_summary || [];
