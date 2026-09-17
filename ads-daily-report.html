@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ads 日报 · Yaahlan / Yaha</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5b6b7c;
+      --line: #e2e8ef;
+      --accent: #1d4f91;
+      --accent-soft: #e8eef7;
+      --shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+      --radius: 10px;
+      --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
+    header.hero { margin-bottom: 20px; }
+    header.hero h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    header.hero p { margin: 0; color: var(--muted); }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 550;
+    }
+    .pill.muted { background: #eef1f4; color: var(--muted); }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 650;
+    }
+    .panel .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child,
+    th.left, td.left { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 550;
+      font-size: 12px;
+      background: #fafbfc;
+    }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover { color: var(--text); }
+    th.sortable .sort-ind {
+      margin-left: 4px;
+      font-size: 10px;
+      opacity: 0.35;
+    }
+    th.sortable.sorted .sort-ind { opacity: 1; color: var(--text); }
+    tbody tr:hover td { background: #f8fafb; }
+    .num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; }
+    td.alert {
+      color: #c62828;
+      font-weight: 600;
+    }
+    .dash { color: #9aa7b5; }
+    footer {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    footer ul { margin: 6px 0 0; padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>Ads 日报 · Yaahlan / Yaha</h1>
+      <p>内部 Ads 投后口径核心指标。结构对齐 AF 日报；数值口径不同，请勿直接混比。</p>
+      <div class="meta" id="meta"></div>
+    </header>
+
+    <section class="panel">
+      <h2>1. Yaahlan 整体 · 近三日</h2>
+      <p class="sub">package=yaahlan · 现金花费 / 注册数 / 注册成本 / 安装数 / 安装成本 / LTV(0)CAC排大R / 首日付费率 / 付费人数排大R / ARPPU-D0排大R · 最新日相对前日变动&gt;20% 标红</p>
+      <div id="t1"></div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Yaahlan Android · 昨日分渠道</h2>
+      <p class="sub" id="t2-sub">仅 Google / Facebook / TikTok</p>
+      <div id="t2"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Yaha 整体 · 近三日</h2>
+      <p class="sub">package=yaha · 现金花费 / 注册数 / 注册成本 / 安装数 / 安装成本 / 注册率 / Day0留存(设备) / LTV(0)CAC排大R · 最新日相对前日变动&gt;20% 标红</p>
+      <div id="t3"></div>
+    </section>
+
+    <section class="panel">
+      <h2>4. Yaha 分区 · 近三日分日</h2>
+      <p class="sub">Android 系列名分区（hindi→印度 / arabic→阿语区 / portuguese→巴西）· 日期×分区 · 点击表头升降序 · 最新日同分区相对前日变动&gt;20% 标红</p>
+      <div id="t4"></div>
+    </section>
+
+    <footer id="notes"></footer>
+  </div>
+
+  <script type="application/json" id="report-data">
+{
+  "meta": {
+    "timezone": "UTC",
+    "currency": "USD",
+    "as_of": "2026-09-17",
+    "date_range": [
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16"
+    ],
+    "yesterday": "2026-09-16",
+    "updated_at": "2026-09-17T14:36:25+08:00",
+    "source": "Ads MCP · 投后口径",
+    "notes": [
+      "日期规则与 AF 日报一致：as_of=UTC 今天；近三日=as_of-3…as_of-1",
+      "Yaahlan / Yaha 通过 package 字段区分（yaahlan / yaha）",
+      "现金花费=cash_cost；注册数=signup；注册成本=cost_per_signup_oversea；安装数=activation；安装成本=cost_per_activation_oversea",
+      "LTV(0)/CAC-排大R=af_nonr_signup_roas_0；注册首日付费率=signup_pay_user_per_signup；付费用户数-排大R(0)=af_signup_nonr_pay_user；ARPPU-D0-排大R=af_nonr_signup_amount_per_af_signup_nonr_pay_user",
+      "Yaha：注册率=af_signup_per_activation；Day0_留存(设备维度)=af_returned_1day_per_af_signup（仅 as_of≥date+2 展示）",
+      "Yaahlan Android 分渠道仅 Google / Facebook / TikTok",
+      "Yaha 分区：Android 系列名含 hindi→印度 / arabic→阿语区 / portuguese→巴西；注册率与次留按安装加权，LTV(0)/CAC 按花费加权",
+      "分日表最新一日：花费/安装/注册/成本相对前日（分区表按同分区）变动>20% 标红",
+      "与 AF Cohort 口径不同，请勿直接混比绝对值"
+    ]
+  },
+  "yaahlan_daily": [
+    {
+      "date": "2026-09-14",
+      "cash_cost": 41336.6,
+      "signup": 21547,
+      "cpa": 1.92,
+      "activation": 26636,
+      "cpi": 1.55,
+      "ltv0_cac_nonr": 0.0433,
+      "pay_rate": 0.0088,
+      "payers_nonr": 169,
+      "arppu_d0_nonr": 10.5818
+    },
+    {
+      "date": "2026-09-15",
+      "cash_cost": 38083.84,
+      "signup": 20288,
+      "cpa": 1.88,
+      "activation": 24890,
+      "cpi": 1.53,
+      "ltv0_cac_nonr": 0.0702,
+      "pay_rate": 0.0096,
+      "payers_nonr": 166,
+      "arppu_d0_nonr": 16.1085
+    },
+    {
+      "date": "2026-09-16",
+      "cash_cost": 39269.08,
+      "signup": 20985,
+      "cpa": 1.87,
+      "activation": 25588,
+      "cpi": 1.53,
+      "ltv0_cac_nonr": 0.0604,
+      "pay_rate": 0.0091,
+      "payers_nonr": 160,
+      "arppu_d0_nonr": 14.8158
+    }
+  ],
+  "yaahlan_android_channel_yesterday": [
+    {
+      "channel": "Google",
+      "ad_channel": "googleadwords_int",
+      "cash_cost": 24642.4,
+      "signup": 11053,
+      "cpa": 2.23,
+      "activation": 14578,
+      "cpi": 1.69,
+      "ltv0_cac_nonr": 0.0515,
+      "pay_rate": 0.0065,
+      "payers_nonr": 65,
+      "arppu_d0_nonr": 19.5115
+    },
+    {
+      "channel": "Facebook",
+      "ad_channel": "Facebook Ads",
+      "cash_cost": 5463.39,
+      "signup": 2140,
+      "cpa": 2.55,
+      "activation": 2824,
+      "cpi": 1.93,
+      "ltv0_cac_nonr": 0.0151,
+      "pay_rate": 0.007,
+      "payers_nonr": 14,
+      "arppu_d0_nonr": 5.9044
+    },
+    {
+      "channel": "TikTok",
+      "ad_channel": "tiktokglobal_int",
+      "cash_cost": 4520.11,
+      "signup": 1416,
+      "cpa": 3.19,
+      "activation": 1966,
+      "cpi": 2.3,
+      "ltv0_cac_nonr": 0.0034,
+      "pay_rate": 0.0078,
+      "payers_nonr": 9,
+      "arppu_d0_nonr": 1.7244
+    }
+  ],
+  "yaha_daily": [
+    {
+      "date": "2026-09-14",
+      "cash_cost": 1369.88,
+      "signup": 5173,
+      "cpa": 0.26,
+      "activation": 5982,
+      "cpi": 0.23,
+      "reg_rate": 0.7456,
+      "d0_retention": 0.2242,
+      "ltv0_cac_nonr": 0.0085
+    },
+    {
+      "date": "2026-09-15",
+      "cash_cost": 1193.93,
+      "signup": 4612,
+      "cpa": 0.26,
+      "activation": 5229,
+      "cpi": 0.23,
+      "reg_rate": 0.752,
+      "d0_retention": 0.2279,
+      "ltv0_cac_nonr": 0.0074
+    },
+    {
+      "date": "2026-09-16",
+      "cash_cost": 1411.07,
+      "signup": 5077,
+      "cpa": 0.28,
+      "activation": 5808,
+      "cpi": 0.24,
+      "reg_rate": 0.7653,
+      "d0_retention": null,
+      "ltv0_cac_nonr": 0.0274
+    }
+  ],
+  "yaha_region_daily": [
+    {
+      "date": "2026-09-14",
+      "region": "印度",
+      "cash_cost": 809.4,
+      "signup": 3804,
+      "cpa": 0.21,
+      "activation": 4424,
+      "cpi": 0.18,
+      "reg_rate": 0.7475,
+      "d0_retention": 0.2136,
+      "ltv0_cac_nonr": 0.0047
+    },
+    {
+      "date": "2026-09-14",
+      "region": "阿语区",
+      "cash_cost": 257.53,
+      "signup": 446,
+      "cpa": 0.58,
+      "activation": 632,
+      "cpi": 0.41,
+      "reg_rate": 0.5807,
+      "d0_retention": 0.3115,
+      "ltv0_cac_nonr": 0.0004
+    },
+    {
+      "date": "2026-09-14",
+      "region": "巴西",
+      "cash_cost": 183.48,
+      "signup": 295,
+      "cpa": 0.62,
+      "activation": 335,
+      "cpi": 0.55,
+      "reg_rate": 0.7433,
+      "d0_retention": 0.1633,
+      "ltv0_cac_nonr": 0.0065
+    },
+    {
+      "date": "2026-09-15",
+      "region": "印度",
+      "cash_cost": 688.16,
+      "signup": 3392,
+      "cpa": 0.2,
+      "activation": 3866,
+      "cpi": 0.18,
+      "reg_rate": 0.7519,
+      "d0_retention": 0.2168,
+      "ltv0_cac_nonr": 0.0086
+    },
+    {
+      "date": "2026-09-15",
+      "region": "阿语区",
+      "cash_cost": 264.8,
+      "signup": 384,
+      "cpa": 0.69,
+      "activation": 535,
+      "cpi": 0.49,
+      "reg_rate": 0.5888,
+      "d0_retention": 0.2729,
+      "ltv0_cac_nonr": 0.0011
+    },
+    {
+      "date": "2026-09-15",
+      "region": "巴西",
+      "cash_cost": 146.94,
+      "signup": 202,
+      "cpa": 0.73,
+      "activation": 249,
+      "cpi": 0.59,
+      "reg_rate": 0.6626,
+      "d0_retention": 0.1704,
+      "ltv0_cac_nonr": 0.0014
+    },
+    {
+      "date": "2026-09-16",
+      "region": "印度",
+      "cash_cost": 817.8,
+      "signup": 3801,
+      "cpa": 0.22,
+      "activation": 4314,
+      "cpi": 0.19,
+      "reg_rate": 0.7779,
+      "d0_retention": null,
+      "ltv0_cac_nonr": 0.0079
+    },
+    {
+      "date": "2026-09-16",
+      "region": "阿语区",
+      "cash_cost": 294.01,
+      "signup": 412,
+      "cpa": 0.71,
+      "activation": 584,
+      "cpi": 0.5,
+      "reg_rate": 0.5873,
+      "d0_retention": null,
+      "ltv0_cac_nonr": 0.0003
+    },
+    {
+      "date": "2026-09-16",
+      "region": "巴西",
+      "cash_cost": 146.8,
+      "signup": 197,
+      "cpa": 0.75,
+      "activation": 233,
+      "cpi": 0.63,
+      "reg_rate": 0.7296,
+      "d0_retention": null,
+      "ltv0_cac_nonr": 0.0034
+    }
+  ]
+}
+  </script>
+  <script>
+    const DATA = JSON.parse(document.getElementById("report-data").textContent);
+
+    const money = (v) =>
+      v == null || v === "" ? "—" : "$" + Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const int = (v) =>
+      v == null || v === "" ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    const cpi = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
+    const pct = (v) => (v == null ? "—" : (Number(v) * 100).toFixed(2) + "%");
+    const arppu = (v) => (v == null ? "—" : "$" + Number(v).toFixed(2));
+    const SWING_THRESHOLD = 0.2;
+    const swung = (curr, prev) => {
+      if (curr == null || prev == null) return false;
+      const p = Number(prev);
+      const c = Number(curr);
+      if (!Number.isFinite(p) || !Number.isFinite(c) || p === 0) return false;
+      return Math.abs(c - p) / Math.abs(p) > SWING_THRESHOLD;
+    };
+    const maybeAlert = (html, alert) => (alert ? { html, alert: true } : html);
+    const cell = (c, left) => {
+      const html = c && typeof c === "object" ? c.html : c;
+      const alert = !!(c && typeof c === "object" && c.alert);
+      const cls = `num${left ? " left" : ""}${alert ? " alert" : ""}`;
+      return `<td class="${cls}">${html === "—" ? '<span class="dash">—</span>' : html}</td>`;
+    };
+
+    function table(headers, rows) {
+      const thead = headers
+        .map((h, i) => `<th class="${i === 0 || h.left ? "left" : ""}">${h.label || h}</th>`)
+        .join("");
+      const body = rows
+        .map((r) => `<tr>${r.map((c, i) => cell(c, i === 0 || headers[i]?.left)).join("")}</tr>`)
+        .join("");
+      return `<table><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    const m = DATA.meta || {};
+    document.getElementById("meta").innerHTML = [
+      `<span class="pill">更新 ${m.updated_at || "—"}</span>`,
+      `<span class="pill muted">as_of ${m.as_of || "—"}</span>`,
+      `<span class="pill muted">${m.timezone || "UTC"} · ${m.currency || "USD"}</span>`,
+      `<span class="pill muted">${m.source || "Ads MCP"}</span>`,
+    ].join("");
+
+    document.getElementById("t2-sub").textContent =
+      `昨日 ${m.yesterday || "—"} · Android · package=yaahlan · 仅 Google / Facebook / TikTok · 同整体指标`;
+
+    const yaahlanDaily = DATA.yaahlan_daily || [];
+    document.getElementById("t1").innerHTML = table(
+      ["日期", "现金花费", "注册数", "注册成本", "安装数", "安装成本", "LTV0/CAC排大R", "首日付费率", "付费人数排大R", "ARPPU-D0排大R"],
+      yaahlanDaily.map((r, i) => {
+        const prev = i === yaahlanDaily.length - 1 && i > 0 ? yaahlanDaily[i - 1] : null;
+        return [
+          r.date,
+          maybeAlert(money(r.cash_cost), prev && swung(r.cash_cost, prev.cash_cost)),
+          maybeAlert(int(r.signup), prev && swung(r.signup, prev.signup)),
+          maybeAlert(cpi(r.cpa), prev && swung(r.cpa, prev.cpa)),
+          maybeAlert(int(r.activation), prev && swung(r.activation, prev.activation)),
+          maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi)),
+          pct(r.ltv0_cac_nonr),
+          pct(r.pay_rate),
+          int(r.payers_nonr),
+          arppu(r.arppu_d0_nonr),
+        ];
+      })
+    );
+
+    document.getElementById("t2").innerHTML = table(
+      [{ label: "渠道", left: true }, "现金花费", "注册数", "注册成本", "安装数", "安装成本", "LTV0/CAC排大R", "首日付费率", "付费人数排大R", "ARPPU-D0排大R"],
+      (DATA.yaahlan_android_channel_yesterday || []).map((r) => [
+        r.channel,
+        money(r.cash_cost),
+        int(r.signup),
+        cpi(r.cpa),
+        int(r.activation),
+        cpi(r.cpi),
+        pct(r.ltv0_cac_nonr),
+        pct(r.pay_rate),
+        int(r.payers_nonr),
+        arppu(r.arppu_d0_nonr),
+      ])
+    );
+
+    const yahaDaily = DATA.yaha_daily || [];
+    document.getElementById("t3").innerHTML = table(
+      ["日期", "现金花费", "注册数", "注册成本", "安装数", "安装成本", "注册率", "Day0留存(设备)", "LTV0/CAC排大R"],
+      yahaDaily.map((r, i) => {
+        const prev = i === yahaDaily.length - 1 && i > 0 ? yahaDaily[i - 1] : null;
+        return [
+          r.date,
+          maybeAlert(money(r.cash_cost), prev && swung(r.cash_cost, prev.cash_cost)),
+          maybeAlert(int(r.signup), prev && swung(r.signup, prev.signup)),
+          maybeAlert(cpi(r.cpa), prev && swung(r.cpa, prev.cpa)),
+          maybeAlert(int(r.activation), prev && swung(r.activation, prev.activation)),
+          maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi)),
+          pct(r.reg_rate),
+          pct(r.d0_retention),
+          pct(r.ltv0_cac_nonr),
+        ];
+      })
+    );
+
+    const regionRows = DATA.yaha_region_daily || [];
+    const yesterday = m.yesterday;
+    const prevByRegion = {};
+    for (const r of regionRows) {
+      if (r.date !== yesterday) prevByRegion[r.region] = r;
+    }
+
+    const regionCols = [
+      { key: "date", label: "日期", type: "str", left: true },
+      { key: "region", label: "分区", type: "str", left: true },
+      { key: "cash_cost", label: "现金花费", type: "num" },
+      { key: "signup", label: "注册数", type: "num" },
+      { key: "cpa", label: "注册成本", type: "num" },
+      { key: "activation", label: "安装数", type: "num" },
+      { key: "cpi", label: "安装成本", type: "num" },
+      { key: "reg_rate", label: "注册率", type: "num" },
+      { key: "d0_retention", label: "Day0留存(设备)", type: "num" },
+      { key: "ltv0_cac_nonr", label: "LTV0/CAC排大R", type: "num" },
+    ];
+    let regionSort = { key: "date", dir: 1 };
+
+    function regionCellValue(r, key) {
+      const prev = r.date === yesterday ? prevByRegion[r.region] : null;
+      if (key === "date") return r.date;
+      if (key === "region") return r.region;
+      if (key === "cash_cost") return maybeAlert(money(r.cash_cost), prev && swung(r.cash_cost, prev.cash_cost));
+      if (key === "signup") return maybeAlert(int(r.signup), prev && swung(r.signup, prev.signup));
+      if (key === "cpa") return maybeAlert(cpi(r.cpa), prev && swung(r.cpa, prev.cpa));
+      if (key === "activation") return maybeAlert(int(r.activation), prev && swung(r.activation, prev.activation));
+      if (key === "cpi") return maybeAlert(cpi(r.cpi), prev && swung(r.cpi, prev.cpi));
+      if (key === "reg_rate") return pct(r.reg_rate);
+      if (key === "d0_retention") return pct(r.d0_retention);
+      if (key === "ltv0_cac_nonr") return pct(r.ltv0_cac_nonr);
+      return "—";
+    }
+
+    function cmpRegion(a, b, key, type, dir) {
+      const av = a[key];
+      const bv = b[key];
+      const aNull = av == null || av === "";
+      const bNull = bv == null || bv === "";
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      if (type === "num") return (Number(av) - Number(bv)) * dir;
+      return String(av).localeCompare(String(bv), "zh") * dir;
+    }
+
+    function renderRegionTable() {
+      const sorted = [...regionRows].sort((a, b) =>
+        cmpRegion(a, b, regionSort.key, regionCols.find((c) => c.key === regionSort.key).type, regionSort.dir)
+      );
+      const thead = regionCols
+        .map((c) => {
+          const active = regionSort.key === c.key;
+          const ind = active ? (regionSort.dir === 1 ? "▲" : "▼") : "↕";
+          const cls = `sortable${c.left ? " left" : ""}${active ? " sorted" : ""}`;
+          return `<th class="${cls}" data-key="${c.key}"><span>${c.label}</span><span class="sort-ind">${ind}</span></th>`;
+        })
+        .join("");
+      const body = sorted
+        .map((r) => {
+          const cells = regionCols.map((c) => cell(regionCellValue(r, c.key), !!c.left)).join("");
+          return `<tr>${cells}</tr>`;
+        })
+        .join("");
+      const el = document.getElementById("t4");
+      el.innerHTML = `<table><thead><tr>${thead}</tr></thead><tbody>${body}</tbody></table>`;
+      el.querySelectorAll("th.sortable").forEach((th) => {
+        th.addEventListener("click", () => {
+          const key = th.getAttribute("data-key");
+          if (regionSort.key === key) regionSort.dir *= -1;
+          else regionSort = { key, dir: key === "date" || key === "region" ? 1 : -1 };
+          renderRegionTable();
+        });
+      });
+    }
+    renderRegionTable();
+
+    document.getElementById("notes").innerHTML =
+      `<div>口径说明</div><ul>${(m.notes || []).map((n) => `<li>${n}</li>`).join("")}</ul>`;
+  </script>
+</body>
+</html>
