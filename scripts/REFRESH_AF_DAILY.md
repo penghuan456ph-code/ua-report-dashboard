@@ -46,6 +46,9 @@ App：
 ## 写回
 1. 覆盖写入 `data/af-daily-report.json`（结构与现文件一致）  
 2. 运行：`python3 scripts/build_af_daily_html.py`
+3. **必须 push 到 `origin/main`**，否则 GitHub Pages 链接不会更新：  
+   `https://penghuan456ph-code.github.io/ua-report-dashboard/af-daily-report.html`  
+   仅提交日报相关文件：`data/af-daily-report.json`、`af-daily-report.html`（若同时刷 Ads 日报则一并提交 Ads 对应文件）
 
 ## 推荐：GitHub Actions 自动刷新（不依赖 Cursor 团队 MCP）
 

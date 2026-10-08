@@ -39,3 +39,6 @@ App 权限入口为 `app_name=yaahlan`，用 `package` 区分产品：
 ## 写回
 1. 覆盖写入 `data/ads-daily-report.json`
 2. 运行：`python3 scripts/build_ads_daily_html.py`
+3. **必须 push 到 `origin/main`**，否则 GitHub Pages 链接不会更新：  
+   `https://penghuan456ph-code.github.io/ua-report-dashboard/ads-daily-report.html`  
+   仅提交日报相关文件：`data/ads-daily-report.json`、`ads-daily-report.html`（若同时刷 AF 日报则一并提交 AF 对应文件）
