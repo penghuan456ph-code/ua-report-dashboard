@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A101 投放数据分析面板</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5b6b7c;
+      --line: #e2e8ef;
+      --accent: #0f6b5c;
+      --accent-soft: #e6f3f0;
+      --warn: #9a5b00;
+      --danger: #a11c2e;
+      --good: #0d6b3c;
+      --shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+      --radius: 10px;
+      --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+
+    header.hero {
+      margin-bottom: 20px;
+    }
+    header.hero h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    header.hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 720px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .upload {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .drop {
+      border: 1.5px dashed #b7c4d0;
+      border-radius: 8px;
+      padding: 28px 18px;
+      text-align: center;
+      background: #fafbfc;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .drop.dragover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .drop strong { color: var(--accent); }
+    .drop .hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .err {
+      color: var(--danger);
+      background: #fdecee;
+      border: 1px solid #f3c4cb;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .ok {
+      color: var(--good);
+      background: #eaf7ef;
+      border: 1px solid #c6e6d2;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+      gap: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      align-items: end;
+    }
+    @media (max-width: 1100px) {
+      .toolbar { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .toolbar { grid-template-columns: 1fr 1fr; }
+    }
+    label.field {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    select, input[type="date"], input[type="search"] {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 10px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    button {
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 1100px) {
+      .kpis { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi {
+      padding: 14px 14px 12px;
+    }
+    .kpi .label { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .kpi .value {
+      margin-top: 4px;
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    .kpi .sub { margin-top: 2px; font-size: 12px; color: var(--muted); }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      height: 34px;
+      padding: 0 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .tab.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: #fff;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 960px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    .card-h {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 650;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-h .metric-pick {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    .card-h .metric-pick select {
+      width: auto;
+      min-width: 132px;
+      height: 30px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .card-b { padding: 12px 14px 16px; }
+    .chart-box { position: relative; height: 280px; }
+    .chart-box.tall { height: 340px; }
+    .trend-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .trend-controls .metric-pick select { min-width: 100px; }
+    .panel + .panel.trend-panel { margin-top: 12px; }
+    .trend-panel { margin-bottom: 12px; }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 560px;
+      border-top: 1px solid var(--line);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+      text-align: right;
+    }
+    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #fff; z-index: 1; }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f8fafb;
+      z-index: 2;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:first-child { z-index: 3; }
+    tbody tr:hover td { background: #f7faf9; }
+    tbody tr:hover td:first-child { background: #f7faf9; }
+    .neg { color: var(--danger); }
+    .pos { color: var(--good); }
+    .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+    .foot {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>A101 投放数据分析面板</h1>
+      <p>上传固定格式的 Looker 导出 Excel（含日期 / 大区 / 国家 / 渠道 / 系统 / 花费 / 注册 / 各周期付费），自动生成拆系统、拆国家、拆渠道分析报表。</p>
+    </header>
+
+    <section class="panel upload">
+      <div id="drop" class="drop">
+        <div>拖拽 Excel 到此处，或 <strong>点击选择文件</strong></div>
+        <div class="hint">支持 .xlsx / .xls / .csv · 10MB+ 大文件会自动流式解析 · 本地解析不上传 · 刷新后自动恢复上次文件</div>
+        <input id="file" type="file" accept=".xlsx,.xls,.csv" hidden />
+      </div>
+      <div id="status" class="meta-row"></div>
+      <div id="message"></div>
+    </section>
+
+    <section id="app" class="hidden">
+      <div class="panel" id="audit" style="padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--muted);"></div>
+
+      <div class="panel toolbar">
+        <label class="field">开始日期
+          <input type="date" id="dateFrom" />
+        </label>
+        <label class="field">结束日期
+          <input type="date" id="dateTo" />
+        </label>
+        <label class="field">大区
+          <select id="filterRegion"><option value="">全部</option></select>
+        </label>
+        <label class="field">自然量 / Organic
+          <select id="filterOrganic">
+            <option value="all">全部（含自然量）</option>
+            <option value="exclude">排除自然量</option>
+            <option value="only">仅自然量</option>
+          </select>
+        </label>
+        <label class="field">搜索维度值
+          <input type="search" id="search" placeholder="筛选表格行…" />
+        </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="applyBtn" class="primary">应用筛选</button>
+          <button id="fullRangeBtn" type="button">全部日期</button>
+          <button id="last7Btn" type="button">近7天</button>
+          <button id="exportBtn">导出 CSV</button>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-dim="os">拆系统</button>
+        <button class="tab" data-dim="channel">拆渠道</button>
+        <button class="tab" data-dim="country">拆国家</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="card-h">
+            <span id="chartTitle">Top 分布</span>
+            <label class="metric-pick muted" style="font-size:12px">
+              Top 指标
+              <select id="topMetric">
+                <option value="spend">花费</option>
+                <option value="regs">注册数</option>
+                <option value="payers7">付费用户D7</option>
+                <option value="rev7">付费金额D7</option>
+              </select>
+            </label>
+          </div>
+          <div class="card-b"><div class="chart-box"><canvas id="spendChart"></canvas></div></div>
+        </div>
+        <div class="panel">
+          <div class="card-h"><span>Day0 / Day7 ROAS</span><span class="muted" style="font-size:12px;font-weight:500">同批维度对比</span></div>
+          <div class="card-b"><div class="chart-box"><canvas id="roasChart"></canvas></div></div>
+        </div>
+      </div>
+
+      <div class="panel trend-panel">
+        <div class="card-h">
+          <span id="trendTitle">趋势变化</span>
+          <div class="trend-controls">
+            <label class="metric-pick muted" style="font-size:12px">
+              粒度
+              <select id="trendGrain">
+                <option value="day">分日</option>
+                <option value="week" selected>分周</option>
+                <option value="month">分月</option>
+              </select>
+            </label>
+            <label class="metric-pick muted" style="font-size:12px">
+              指标
+              <select id="trendMetric">
+                <option value="spend">花费</option>
+                <option value="regs">注册数</option>
+                <option value="payers7">付费用户D7</option>
+                <option value="rev7">付费金额D7</option>
+                <option value="cpi">CAC</option>
+                <option value="roas0">ROAS D0</option>
+                <option value="roas7">ROAS D7</option>
+              </select>
+            </label>
+            <label class="metric-pick muted" style="font-size:12px">
+              系列
+              <select id="trendSeries">
+                <option value="total">仅合计</option>
+                <option value="dim" selected>合计 + 当前维度 Top</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="card-b"><div class="chart-box tall"><canvas id="trendChart"></canvas></div></div>
+        <div class="table-wrap" style="max-height:280px">
+          <table>
+            <thead id="trendThead"></thead>
+            <tbody id="trendTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="card-h">
+          <span id="tableTitle">拆系统明细</span>
+          <span class="muted" style="font-size:12px;font-weight:500">点击表头排序</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <p class="foot">
+      派生指标：CPI = 花费 / 注册；付费率(Dn) = 付费用户(Dn) / 注册；ROAS(Dn) = 付费金额(Dn) / 花费。
+      会自动排除 Looker 导出末尾的空维度合计行（该行花费约等于全表明细合计，未排除会使总花费翻倍）。
+      超大导出（如跨年数十万行）走流式解析，避免浏览器内存撑爆导致「文件没有数据」。
+      文件名日期通常是导出日；面板默认覆盖文件内全部业务日期，可用「近7天」快速对齐周报口径。
+    </p>
+  </div>
+
+  <script>
+    const REQUIRED = ["日期", "大区", "国家", "渠道", "系统", "账面花费", "注册数-排大R"];
+
+    const WANTED = {
+      date: "日期",
+      region: "大区",
+      country: "国家",
+      channel: "渠道",
+      os: "系统",
+      lang: "语言",
+      spend: "账面花费",
+      regs: "注册数-排大R",
+      payers0: "付费用户数-排大R(0)",
+      payers3: "付费用户数-排大R(3)",
+      payers7: "付费用户数-排大R(7)",
+      rev0: "付费金额-排大R(0)",
+      rev3: "付费金额-排大R(3)",
+      rev7: "付费金额-排大R(7)",
+      rev15: "付费金额-排大R(15)",
+      rev30: "付费金额-排大R(30)",
+      rev60: "付费金额-排大R(60)",
+      rev90: "付费金额-排大R(90)",
+    };
+
+    const TOP_METRICS = {
+      spend: { key: "spend", label: "花费", unit: "$", fmt: (n) => fmtMoney(n) },
+      regs: { key: "regs", label: "注册数", unit: "", fmt: (n) => fmtInt(n) },
+      payers7: { key: "payers7", label: "付费用户D7", unit: "", fmt: (n) => fmtInt(n) },
+      rev7: { key: "rev7", label: "付费金额D7", unit: "$", fmt: (n) => fmtMoney(n) },
+    };
+
+    const TREND_METRICS = {
+      spend: { key: "spend", label: "花费", kind: "money", fmt: (n) => fmtMoney(n) },
+      regs: { key: "regs", label: "注册数", kind: "int", fmt: (n) => fmtInt(n) },
+      payers7: { key: "payers7", label: "付费用户D7", kind: "int", fmt: (n) => fmtInt(n) },
+      rev7: { key: "rev7", label: "付费金额D7", kind: "money", fmt: (n) => fmtMoney(n) },
+      cpi: { key: "cpi", label: "CAC", kind: "ratio", fmt: (n) => fmtRatio(n) },
+      roas0: { key: "roas0", label: "ROAS D0", kind: "pct", fmt: (n) => fmtPct(n) },
+      roas7: { key: "roas7", label: "ROAS D7", kind: "pct", fmt: (n) => fmtPct(n) },
+    };
+
+    const TREND_COLORS = [
+      "#0f6b5c", "#1f4e79", "#c47a1a", "#7a3e9d", "#a11c2e",
+      "#2a6f97", "#5c7c4a", "#8b5e34", "#4a5568", "#0d6b3c",
+    ];
+
+    const state = {
+      rows: [],
+      filtered: [],
+      dim: "os",
+      sortKey: "spend",
+      sortDir: "desc",
+      topMetric: "spend",
+      trendGrain: "week",
+      trendMetric: "spend",
+      trendSeries: "dim",
+      agg: [],
+      spendChart: null,
+      roasChart: null,
+      trendChart: null,
+      audit: null,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const drop = $("drop");
+    const fileInput = $("file");
+
+    function cleanHeader(h) {
+      return String(h ?? "")
+        .replace(/^\uFEFF/, "")
+        .replace(/\u00a0/g, " ")
+        .trim();
+    }
+
+    function num(v) {
+      if (v == null || v === "") return 0;
+      if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+      if (typeof v === "boolean") return v ? 1 : 0;
+      const s = String(v).replace(/,/g, "").replace(/%/g, "").trim();
+      if (!s || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "nan") return 0;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function cleanDim(v) {
+      if (v == null || v === "") return "";
+      const s = String(v).trim();
+      if (!s) return "";
+      const low = s.toLowerCase();
+      if (low === "null" || low === "nan" || low === "undefined" || low === "none") return "";
+      return s;
+    }
+
+    /** Never use toISOString — it shifts calendar dates under UTC+8. */
+    function parseDate(v) {
+      if (v == null || v === "") return null;
+      if (v instanceof Date && !isNaN(v.getTime())) {
+        const y = v.getFullYear();
+        const m = String(v.getMonth() + 1).padStart(2, "0");
+        const d = String(v.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+      if (typeof v === "number" && Number.isFinite(v)) {
+        if (typeof XLSX !== "undefined" && XLSX.SSF && XLSX.SSF.parse_date_code) {
+          const d = XLSX.SSF.parse_date_code(v);
+          if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+        }
+        const epoch = Date.UTC(1899, 11, 30) + Math.round(v) * 86400000;
+        const dt = new Date(epoch);
+        const y = dt.getUTCFullYear();
+        const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(dt.getUTCDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+      const s = String(v).trim().replace(/\//g, "-").replace(/\./g, "-");
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+      m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+      if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+      return null;
+    }
+
+    function fmtMoney(n) {
+      if (!Number.isFinite(n)) return "—";
+      if (Math.abs(n) >= 1000) return "$" + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      return "$" + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+    function fmtInt(n) {
+      return Number.isFinite(n) ? Math.round(n).toLocaleString() : "—";
+    }
+    function fmtPct(n) {
+      if (!Number.isFinite(n)) return "—";
+      return (n * 100).toFixed(2) + "%";
+    }
+    function fmtRatio(n) {
+      if (!Number.isFinite(n)) return "—";
+      return n.toFixed(2);
+    }
+
+    function setMessage(html, type) {
+      const el = $("message");
+      el.innerHTML = html ? `<div class="${type}">${html}</div>` : "";
+    }
+
+    const LARGE_XLSX_BYTES = 5 * 1024 * 1024;
+
+    function decodeXml(s) {
+      return String(s)
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, "&");
+    }
+
+    function colLettersToIndex(letters) {
+      let n = 0;
+      for (let i = 0; i < letters.length; i++) n = n * 26 + (letters.charCodeAt(i) - 64);
+      return n - 1;
+    }
+
+    function parseSharedStringsXml(xml) {
+      const out = [];
+      const siRe = /<si>([\s\S]*?)<\/si>/g;
+      let m;
+      while ((m = siRe.exec(xml))) {
+        const parts = [...m[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((x) => decodeXml(x[1]));
+        out.push(parts.join(""));
+      }
+      return out;
+    }
+
+    function parseRowXml(rowXml, sharedStrings) {
+      const cells = [];
+      const re = /<c r="([A-Z]+)(\d+)"([^>]*?)(?:\/>|>(?:<v>([^<]*)<\/v>)?)/g;
+      let m;
+      while ((m = re.exec(rowXml))) {
+        const idx = colLettersToIndex(m[1]);
+        const attrs = m[3] || "";
+        const raw = m[4];
+        if (raw == null || raw === "") {
+          cells[idx] = null;
+          continue;
+        }
+        if (/\bt="s"/.test(attrs)) {
+          const si = Number(raw);
+          cells[idx] = Number.isFinite(si) ? sharedStrings[si] ?? null : null;
+        } else {
+          const n = Number(raw);
+          cells[idx] = Number.isFinite(n) ? n : decodeXml(raw);
+        }
+      }
+      return cells;
+    }
+
+    async function yieldToUi() {
+      await new Promise((r) => setTimeout(r, 0));
+    }
+
+    /** Stream-parse OOXML sheet — needed for 10MB+ Looker exports (SheetJS OOMs / returns empty). */
+    async function streamXlsxRows(arrayBuffer, onRow, onProgress) {
+      if (typeof JSZip === "undefined") throw new Error("JSZip 未加载，无法解析大文件");
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const sheetName =
+        Object.keys(zip.files).find((n) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(n)) ||
+        "xl/worksheets/sheet1.xml";
+      const sheetFile = zip.file(sheetName);
+      if (!sheetFile) throw new Error("xlsx 中未找到 worksheet");
+
+      let sharedStrings = [];
+      const sst = zip.file("xl/sharedStrings.xml");
+      if (sst) sharedStrings = parseSharedStringsXml(await sst.async("string"));
+
+      const pushRow = (rowXml) => {
+        onRow(parseRowXml(rowXml, sharedStrings));
+      };
+
+      const blob = await sheetFile.async("blob");
+      if (!blob.stream) {
+        const xml = await sheetFile.async("string");
+        let n = 0;
+        for (const m of xml.matchAll(/<row[^>]*>[\s\S]*?<\/row>/g)) {
+          pushRow(m[0]);
+          n += 1;
+          if (n % 40000 === 0 && onProgress) onProgress(n);
+        }
+        return n;
+      }
+
+      const reader = blob.stream().pipeThrough(new TextDecoderStream()).getReader();
+      let buf = "";
+      let rowsSeen = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += value;
+        let cut = buf.lastIndexOf("</row>");
+        if (cut === -1) continue;
+        cut += 6;
+        const chunk = buf.slice(0, cut);
+        buf = buf.slice(cut);
+        for (const m of chunk.matchAll(/<row[^>]*>[\s\S]*?<\/row>/g)) {
+          pushRow(m[0]);
+          rowsSeen += 1;
+          if (rowsSeen % 40000 === 0) {
+            if (onProgress) onProgress(rowsSeen);
+            await yieldToUi();
+          }
+        }
+      }
+      if (buf.includes("<row")) {
+        for (const m of buf.matchAll(/<row[^>]*>[\s\S]*?<\/row>/g)) {
+          pushRow(m[0]);
+          rowsSeen += 1;
+        }
+      }
+      return rowsSeen;
+    }
+
+    function loadXlsxSheetJs(data) {
+      const wb = XLSX.read(data, { type: "array", cellDates: false, raw: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      return XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: null,
+        raw: true,
+        blankrows: false,
+      });
+    }
+
+    function parseCsvText(text) {
+      const wb = XLSX.read(text, { type: "string", raw: true });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      return XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: null,
+        raw: true,
+        blankrows: false,
+      });
+    }
+
+    function createRowParser() {
+      let col = null;
+      let headerPreview = [];
+      const rows = [];
+      let sheetRows = 0;
+      let excluded = 0;
+      let excludedSpend = 0;
+      let rawSpend = 0;
+      let detailSpendSoFar = 0;
+      let minDate = null;
+      let maxDate = null;
+      const dateSet = new Set();
+      const fileTot = emptyAgg();
+
+      function ensureHeader(arr) {
+        if (col) return;
+        headerPreview = (arr || []).map(cleanHeader);
+        col = buildColIndex(headerPreview);
+        const missing = REQUIRED.filter((h) => col[h] == null);
+        if (missing.length) {
+          throw new Error(
+            "缺少必要列：" +
+              missing.join("、") +
+              "。实际表头：" +
+              headerPreview.filter(Boolean).slice(0, 12).join("、")
+          );
+        }
+      }
+
+      function get(arr, name) {
+        const i = col[name];
+        return i == null || i >= arr.length ? null : arr[i];
+      }
+
+      function ingest(arr) {
+        if (!arr || !arr.length) return;
+        if (!col) {
+          ensureHeader(arr);
+          return;
+        }
+        sheetRows += 1;
+        let empty = true;
+        for (let i = 0; i < arr.length; i++) {
+          const c = arr[i];
+          if (c != null && String(c).trim() !== "") {
+            empty = false;
+            break;
+          }
+        }
+        if (empty) return;
+
+        const spend = num(get(arr, WANTED.spend));
+        rawSpend += spend;
+
+        const row = {
+          date: parseDate(get(arr, WANTED.date)),
+          region: cleanDim(get(arr, WANTED.region)),
+          country: cleanDim(get(arr, WANTED.country)),
+          channel: cleanDim(get(arr, WANTED.channel)),
+          os: cleanDim(get(arr, WANTED.os)),
+          lang: cleanDim(get(arr, WANTED.lang)),
+          spend,
+          regs: num(get(arr, WANTED.regs)),
+          payers0: num(get(arr, WANTED.payers0)),
+          payers3: num(get(arr, WANTED.payers3)),
+          payers7: num(get(arr, WANTED.payers7)),
+          rev0: num(get(arr, WANTED.rev0)),
+          rev3: num(get(arr, WANTED.rev3)),
+          rev7: num(get(arr, WANTED.rev7)),
+          rev15: num(get(arr, WANTED.rev15)),
+          rev30: num(get(arr, WANTED.rev30)),
+          rev60: num(get(arr, WANTED.rev60)),
+          rev90: num(get(arr, WANTED.rev90)),
+        };
+
+        if (isSummaryRow(row, detailSpendSoFar)) {
+          excluded += 1;
+          excludedSpend += spend;
+          return;
+        }
+
+        row.region = row.region || "unknown";
+        row.country = row.country || "unknown";
+        row.channel = row.channel || "unknown";
+        row.os = row.os || "unknown";
+
+        rows.push(row);
+        addTo(fileTot, row);
+        detailSpendSoFar += spend;
+        if (row.date) {
+          dateSet.add(row.date);
+          if (!minDate || row.date < minDate) minDate = row.date;
+          if (!maxDate || row.date > maxDate) maxDate = row.date;
+        }
+      }
+
+      function finish() {
+        if (!col) throw new Error("文件没有数据");
+        if (!rows.length) throw new Error("有效明细行为空（可能日期无法解析，或只有合计行）");
+        const derived = derive(fileTot);
+        return {
+          rows,
+          audit: {
+            sheetRows,
+            loadedRows: rows.length,
+            excludedRows: excluded,
+            rawSpend,
+            excludedSpend,
+            loadedSpend: derived.spend,
+            loadedRegs: derived.regs,
+            loadedRev0: derived.rev0,
+            loadedRev7: derived.rev7,
+            minDate,
+            maxDate,
+            dayCount: dateSet.size,
+          },
+        };
+      }
+
+      return { ingest, finish };
+    }
+
+    function parseMatrix(matrix) {
+      if (!matrix.length) throw new Error("文件没有数据");
+      const parser = createRowParser();
+      for (const arr of matrix) parser.ingest(arr);
+      return parser.finish();
+    }
+
+    async function parseWorkbookFile(file, onProgress) {
+      const buf = await file.arrayBuffer();
+      const name = (file.name || "").toLowerCase();
+      const parser = createRowParser();
+
+      if (name.endsWith(".csv")) {
+        const matrix = parseCsvText(new TextDecoder("utf-8").decode(buf));
+        for (const arr of matrix) parser.ingest(arr);
+        return parser.finish();
+      }
+
+      const data = new Uint8Array(buf);
+      const preferStream = file.size >= LARGE_XLSX_BYTES;
+
+      if (!preferStream) {
+        try {
+          const matrix = loadXlsxSheetJs(data);
+          if (matrix && matrix.length > 1) {
+            for (const arr of matrix) parser.ingest(arr);
+            return parser.finish();
+          }
+        } catch (err) {
+          console.warn("SheetJS 解析失败，改用流式解析", err);
+        }
+      }
+
+      if (onProgress) onProgress(0, preferStream ? "大文件流式解析中（可覆盖数十万行，请稍候）…" : "改用流式解析…");
+      const n = await streamXlsxRows(
+        buf,
+        (arr) => parser.ingest(arr),
+        (count) => {
+          if (onProgress) onProgress(count, `已读取 ${count.toLocaleString()} 行…`);
+        }
+      );
+      if (!n) throw new Error("文件没有数据（流式解析未读到任何行，请确认文件未损坏）");
+      return parser.finish();
+    }
+
+    function buildColIndex(headerRow) {
+      const idx = {};
+      headerRow.forEach((h, i) => {
+        const key = cleanHeader(h);
+        if (!key) return;
+        if (idx[key] == null) idx[key] = i;
+      });
+      return idx;
+    }
+
+    function isSummaryRow(row, detailSpendSoFar) {
+      const noDate = !row.date;
+      const noDims = !row.region && !row.country && !row.channel && !row.os;
+      if (noDate || noDims) return true;
+      if (detailSpendSoFar > 1000 && row.spend > detailSpendSoFar * 0.85 && row.spend < detailSpendSoFar * 1.15) {
+        return true;
+      }
+      return false;
+    }
+
+    function emptyAgg() {
+      return {
+        spend: 0, regs: 0, payers0: 0, payers3: 0, payers7: 0,
+        rev0: 0, rev3: 0, rev7: 0, rev15: 0, rev30: 0, rev60: 0, rev90: 0,
+      };
+    }
+
+    function addTo(a, r) {
+      a.spend += r.spend;
+      a.regs += r.regs;
+      a.payers0 += r.payers0;
+      a.payers3 += r.payers3;
+      a.payers7 += r.payers7;
+      a.rev0 += r.rev0;
+      a.rev3 += r.rev3;
+      a.rev7 += r.rev7;
+      a.rev15 += r.rev15;
+      a.rev30 += r.rev30;
+      a.rev60 += r.rev60;
+      a.rev90 += r.rev90;
+    }
+
+    function derive(a) {
+      const cpi = a.regs > 0 ? a.spend / a.regs : NaN;
+      const payRate0 = a.regs > 0 ? a.payers0 / a.regs : NaN;
+      const payRate7 = a.regs > 0 ? a.payers7 / a.regs : NaN;
+      const roas0 = a.spend > 0 ? a.rev0 / a.spend : NaN;
+      const roas3 = a.spend > 0 ? a.rev3 / a.spend : NaN;
+      const roas7 = a.spend > 0 ? a.rev7 / a.spend : NaN;
+      const roas15 = a.spend > 0 ? a.rev15 / a.spend : NaN;
+      const roas30 = a.spend > 0 ? a.rev30 / a.spend : NaN;
+      const arppu0 = a.payers0 > 0 ? a.rev0 / a.payers0 : NaN;
+      return { ...a, cpi, payRate0, payRate7, roas0, roas3, roas7, roas15, roas30, arppu0 };
+    }
+
+    function totals(rows) {
+      const a = emptyAgg();
+      for (const r of rows) addTo(a, r);
+      return derive(a);
+    }
+
+    const IDB_NAME = "ua-report-dashboard";
+    const IDB_STORE = "files";
+    const CACHE_KEY = "last-workbook";
+    const PREFS_KEY = "ua-report-prefs-v1";
+
+    function openIdb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("IndexedDB 打开失败"));
+      });
+    }
+
+    async function idbPut(key, value) {
+      const db = await openIdb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("IndexedDB 写入失败"));
+        tx.objectStore(IDB_STORE).put(value, key);
+      });
+    }
+
+    async function idbGet(key) {
+      const db = await openIdb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const req = tx.objectStore(IDB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => reject(req.error || new Error("IndexedDB 读取失败"));
+      });
+    }
+
+    async function idbDel(key) {
+      const db = await openIdb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("IndexedDB 删除失败"));
+        tx.objectStore(IDB_STORE).delete(key);
+      });
+    }
+
+    async function saveCachedFile(file) {
+      const buffer = await file.arrayBuffer();
+      await idbPut(CACHE_KEY, {
+        name: file.name,
+        type: file.type || "",
+        size: file.size,
+        savedAt: Date.now(),
+        buffer,
+      });
+    }
+
+    async function loadCachedFile() {
+      const cached = await idbGet(CACHE_KEY);
+      if (!cached || !cached.buffer) return null;
+      return cached;
+    }
+
+    function saveUiPrefs() {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify({
+          dateFrom: $("dateFrom").value,
+          dateTo: $("dateTo").value,
+          region: $("filterRegion").value,
+          organic: $("filterOrganic").value,
+          search: $("search").value,
+          dim: state.dim,
+          topMetric: state.topMetric,
+          trendGrain: state.trendGrain,
+          trendMetric: state.trendMetric,
+          trendSeries: state.trendSeries,
+          sortKey: state.sortKey,
+          sortDir: state.sortDir,
+        }));
+      } catch (err) {
+        console.warn("保存筛选偏好失败", err);
+      }
+    }
+
+    function loadUiPrefs() {
+      try {
+        const raw = localStorage.getItem(PREFS_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (err) {
+        console.warn("读取筛选偏好失败", err);
+        return null;
+      }
+    }
+
+    function applyUiPrefs(prefs) {
+      if (!prefs) return;
+      if (prefs.dateFrom) $("dateFrom").value = prefs.dateFrom;
+      if (prefs.dateTo) $("dateTo").value = prefs.dateTo;
+      if (prefs.region != null) $("filterRegion").value = prefs.region;
+      if (prefs.organic) $("filterOrganic").value = prefs.organic;
+      if (prefs.search != null) $("search").value = prefs.search;
+      if (prefs.topMetric && TOP_METRICS[prefs.topMetric]) {
+        state.topMetric = prefs.topMetric;
+        $("topMetric").value = prefs.topMetric;
+      }
+      if (prefs.trendGrain) {
+        state.trendGrain = prefs.trendGrain;
+        $("trendGrain").value = prefs.trendGrain;
+      }
+      if (prefs.trendMetric && TREND_METRICS[prefs.trendMetric]) {
+        state.trendMetric = prefs.trendMetric;
+        $("trendMetric").value = prefs.trendMetric;
+      }
+      if (prefs.trendSeries) {
+        state.trendSeries = prefs.trendSeries;
+        $("trendSeries").value = prefs.trendSeries;
+      }
+      if (prefs.sortKey) state.sortKey = prefs.sortKey;
+      if (prefs.sortDir) state.sortDir = prefs.sortDir;
+      if (prefs.dim && ["os", "channel", "country"].includes(prefs.dim)) {
+        state.dim = prefs.dim;
+        document.querySelectorAll(".tab").forEach((b) => {
+          b.classList.toggle("active", b.dataset.dim === prefs.dim);
+        });
+      }
+    }
+
+    function renderFileStatus(fileMeta, { fromCache = false } = {}) {
+      const sizeMb = (fileMeta.size / 1024 / 1024).toFixed(2);
+      const cacheHint = fromCache
+        ? `<span class="pill">已从本地缓存恢复</span>`
+        : `<span class="pill">已缓存到本机</span>`;
+      const saved = fileMeta.savedAt
+        ? `<span>缓存于 ${new Date(fileMeta.savedAt).toLocaleString()}</span>`
+        : "";
+      $("status").innerHTML = `
+        <span class="pill">${escapeHtml(fileMeta.name)}</span>
+        <span>${sizeMb} MB</span>
+        ${cacheHint}
+        ${saved}
+        <button type="button" id="clearCacheBtn" style="height:28px;padding:0 10px;font-size:12px">清除缓存</button>
+      `;
+      const btn = $("clearCacheBtn");
+      if (btn) btn.addEventListener("click", clearCachedWorkbook);
+    }
+
+    async function clearCachedWorkbook() {
+      try {
+        await idbDel(CACHE_KEY);
+        localStorage.removeItem(PREFS_KEY);
+        state.rows = [];
+        state.filtered = [];
+        state.agg = [];
+        state.audit = null;
+        $("app").classList.add("hidden");
+        $("status").innerHTML = "";
+        setMessage("已清除本地缓存。重新上传文件后会再次自动保存。", "ok");
+        fileInput.value = "";
+      } catch (err) {
+        console.error(err);
+        setMessage("清除缓存失败：" + (err.message || String(err)), "err");
+      }
+    }
+
+    async function handleFile(file, opts = {}) {
+      if (!file) return;
+      const persist = opts.persist !== false;
+      const fromCache = !!opts.fromCache;
+      setMessage(fromCache ? "正在从本地缓存恢复…" : "正在读取文件…", "ok");
+      renderFileStatus(
+        { name: file.name, size: file.size, savedAt: opts.savedAt },
+        { fromCache }
+      );
+      try {
+        const parsed = await parseWorkbookFile(file, (_n, msg) => {
+          if (msg) setMessage(msg, "ok");
+        });
+        setMessage("正在渲染面板…", "ok");
+        await yieldToUi();
+        state.rows = parsed.rows;
+        state.audit = parsed.audit;
+        bootstrapFilters(parsed.rows);
+        if (fromCache) applyUiPrefs(loadUiPrefs());
+        $("app").classList.remove("hidden");
+        applyFilters();
+        if (persist) {
+          try {
+            await saveCachedFile(file);
+            renderFileStatus(
+              { name: file.name, size: file.size, savedAt: Date.now() },
+              { fromCache: false }
+            );
+          } catch (cacheErr) {
+            console.warn("缓存文件失败（不影响本次分析）", cacheErr);
+            setMessage(
+              `文件已加载，但本地缓存失败：${cacheErr.message || cacheErr}。刷新后需重新上传。`,
+              "err"
+            );
+          }
+        }
+        const a = parsed.audit;
+        const prefix = fromCache ? "已恢复缓存文件：" : "已加载明细 ";
+        setMessage(
+          `${prefix}${a.loadedRows.toLocaleString()} 行（排除合计/空维 ${a.excludedRows} 行）。` +
+            `文件明细花费 ${fmtMoney(a.loadedSpend)}，注册 ${fmtInt(a.loadedRegs)}。` +
+            `日期覆盖 ${a.minDate} ~ ${a.maxDate}（共 ${a.dayCount} 天）。` +
+            (fromCache || persist ? " 刷新页面可自动恢复，无需重传。" : ""),
+          "ok"
+        );
+      } catch (err) {
+        console.error(err);
+        setMessage(err.message || String(err), "err");
+        $("app").classList.add("hidden");
+        if (fromCache) {
+          try { await idbDel(CACHE_KEY); } catch (_) { /* ignore */ }
+        }
+      }
+    }
+
+    async function restoreCachedWorkbook() {
+      try {
+        const cached = await loadCachedFile();
+        if (!cached) return;
+        const file = new File([cached.buffer], cached.name || "cached.xlsx", {
+          type: cached.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        await handleFile(file, { persist: false, fromCache: true, savedAt: cached.savedAt });
+      } catch (err) {
+        console.warn("自动恢复缓存失败", err);
+        setMessage("本地缓存恢复失败，请重新上传文件。", "err");
+      }
+    }
+
+    function isOrganicChannel(channel) {
+      const s = String(channel ?? "").trim().toLowerCase();
+      if (!s) return false;
+      return s === "organic" || s.includes("organic") || s.includes("自然");
+    }
+
+    function organicModeLabel(mode) {
+      if (mode === "exclude") return "排除自然量";
+      if (mode === "only") return "仅自然量";
+      return "含自然量";
+    }
+
+    function bootstrapFilters(rows) {
+      const dates = [...new Set(rows.map((r) => r.date))].sort();
+      $("dateFrom").value = dates[0];
+      $("dateTo").value = dates[dates.length - 1];
+      const regions = [...new Set(rows.map((r) => r.region))].sort((a, b) => a.localeCompare(b, "zh"));
+      const sel = $("filterRegion");
+      sel.innerHTML = `<option value="">全部</option>` + regions.map((r) => `<option value="${escapeAttr(r)}">${escapeHtml(r)}</option>`).join("");
+      $("filterOrganic").value = "all";
+      $("search").value = "";
+    }
+
+    function setLastNDays(n) {
+      if (!state.rows.length) return;
+      const dates = [...new Set(state.rows.map((r) => r.date))].sort();
+      const to = dates[dates.length - 1];
+      const from = dates[Math.max(0, dates.length - n)];
+      $("dateFrom").value = from;
+      $("dateTo").value = to;
+      applyFilters();
+    }
+
+    function setFullRange() {
+      if (!state.rows.length) return;
+      const dates = [...new Set(state.rows.map((r) => r.date))].sort();
+      $("dateFrom").value = dates[0];
+      $("dateTo").value = dates[dates.length - 1];
+      applyFilters();
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function escapeAttr(s) {
+      return escapeHtml(s).replace(/`/g, "&#96;");
+    }
+
+    function applyFilters() {
+      const from = $("dateFrom").value;
+      const to = $("dateTo").value;
+      const region = $("filterRegion").value;
+      const organicMode = $("filterOrganic").value;
+      state.filtered = state.rows.filter((r) => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (region && r.region !== region) return false;
+        const organic = isOrganicChannel(r.channel);
+        if (organicMode === "exclude" && organic) return false;
+        if (organicMode === "only" && !organic) return false;
+        return true;
+      });
+      saveUiPrefs();
+      renderAll();
+    }
+
+    function aggregate(dim) {
+      const map = new Map();
+      for (const r of state.filtered) {
+        const key = r[dim] || "unknown";
+        if (!map.has(key)) map.set(key, emptyAgg());
+        addTo(map.get(key), r);
+      }
+      const list = [...map.entries()].map(([name, a]) => ({ name, ...derive(a) }));
+      list.sort((a, b) => {
+        if (state.sortKey === "name") {
+          return state.sortDir === "asc"
+            ? String(a.name).localeCompare(String(b.name), "zh")
+            : String(b.name).localeCompare(String(a.name), "zh");
+        }
+        const av = a[state.sortKey];
+        const bv = b[state.sortKey];
+        const an = Number.isFinite(av) ? av : state.sortDir === "asc" ? Infinity : -Infinity;
+        const bn = Number.isFinite(bv) ? bv : state.sortDir === "asc" ? Infinity : -Infinity;
+        if (an !== bn) return state.sortDir === "asc" ? an - bn : bn - an;
+        return String(a.name).localeCompare(String(b.name), "zh");
+      });
+      return list;
+    }
+
+    function renderAudit() {
+      if (!state.audit) { $("audit").innerHTML = ""; return; }
+      const a = state.audit;
+      const t = totals(state.filtered);
+      const from = $("dateFrom").value;
+      const to = $("dateTo").value;
+      const organicMode = $("filterOrganic").value;
+      $("audit").innerHTML = `
+        <strong style="color:var(--text)">校验</strong>
+        · 文件明细合计：花费 <b style="color:var(--text)">${fmtMoney(a.loadedSpend)}</b>
+        / 注册 <b style="color:var(--text)">${fmtInt(a.loadedRegs)}</b>
+        / D0收入 <b style="color:var(--text)">${fmtMoney(a.loadedRev0)}</b>
+        / D7收入 <b style="color:var(--text)">${fmtMoney(a.loadedRev7)}</b>
+        · 已排除合计行 ${a.excludedRows}（花费 ${fmtMoney(a.excludedSpend)}；若未排除会变成约 ${fmtMoney(a.rawSpend)}）
+        · 当前筛选 ${from || "…"} ~ ${to || "…"} · ${organicModeLabel(organicMode)}：花费 <b style="color:var(--text)">${fmtMoney(t.spend)}</b>
+        / 注册 <b style="color:var(--text)">${fmtInt(t.regs)}</b>
+        / ${state.filtered.length.toLocaleString()} 行
+        · 文件实际含 <b style="color:var(--text)">${a.dayCount}</b> 天（${a.minDate} ~ ${a.maxDate}），不是仅文件名当天
+      `;
+    }
+
+    function renderKpis() {
+      const t = totals(state.filtered);
+      const cards = [
+        ["账面花费", fmtMoney(t.spend), `${state.filtered.length.toLocaleString()} 行`],
+        ["注册数", fmtInt(t.regs), `CPI ${fmtRatio(t.cpi)}`],
+        ["付费用户 D0", fmtInt(t.payers0), `付费率 ${fmtPct(t.payRate0)}`],
+        ["付费金额 D0", fmtMoney(t.rev0), `ROAS ${fmtPct(t.roas0)}`],
+        ["付费金额 D7", fmtMoney(t.rev7), `ROAS ${fmtPct(t.roas7)}`],
+        ["付费金额 D30", fmtMoney(t.rev30), `ROAS ${fmtPct(t.roas30)}`],
+      ];
+      $("kpis").innerHTML = cards.map(([label, value, sub]) => `
+        <div class="panel kpi">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="sub">${sub}</div>
+        </div>
+      `).join("");
+    }
+
+    const COLUMNS = [
+      { key: "name", label: "维度" },
+      { key: "spend", label: "花费", fmt: fmtMoney },
+      { key: "regs", label: "注册", fmt: fmtInt },
+      { key: "cpi", label: "CPI", fmt: fmtRatio },
+      { key: "payers0", label: "付费用户D0", fmt: fmtInt },
+      { key: "payRate0", label: "付费率D0", fmt: fmtPct },
+      { key: "rev0", label: "收入D0", fmt: fmtMoney },
+      { key: "roas0", label: "ROAS D0", fmt: fmtPct },
+      { key: "payers7", label: "付费用户D7", fmt: fmtInt },
+      { key: "payRate7", label: "付费率D7", fmt: fmtPct },
+      { key: "rev7", label: "收入D7", fmt: fmtMoney },
+      { key: "roas7", label: "ROAS D7", fmt: fmtPct },
+      { key: "rev15", label: "收入D15", fmt: fmtMoney },
+      { key: "roas15", label: "ROAS D15", fmt: fmtPct },
+      { key: "rev30", label: "收入D30", fmt: fmtMoney },
+      { key: "roas30", label: "ROAS D30", fmt: fmtPct },
+      { key: "arppu0", label: "ARPPU D0", fmt: fmtRatio },
+    ];
+
+    function renderTable() {
+      const q = $("search").value.trim().toLowerCase();
+      let rows = state.agg;
+      if (q) rows = rows.filter((r) => String(r.name).toLowerCase().includes(q));
+
+      const dimLabel = { os: "系统", channel: "渠道", country: "国家" }[state.dim];
+      $("tableTitle").textContent = `拆${dimLabel}明细（${rows.length}）`;
+      COLUMNS[0].label = dimLabel;
+
+      $("thead").innerHTML = `<tr>${COLUMNS.map((c) => {
+        const mark = state.sortKey === c.key ? (state.sortDir === "asc" ? " ↑" : " ↓") : "";
+        return `<th data-key="${c.key}">${c.label}${mark}</th>`;
+      }).join("")}</tr>`;
+
+      $("tbody").innerHTML = rows.map((r) => `<tr>${COLUMNS.map((c) => {
+        const raw = r[c.key];
+        const text = c.key === "name" ? escapeHtml(raw) : c.fmt(raw);
+        let cls = "";
+        if (c.key.startsWith("roas") && Number.isFinite(raw)) cls = raw >= 0.1 ? "pos" : raw < 0.05 ? "neg" : "";
+        return `<td class="${cls}">${text}</td>`;
+      }).join("")}</tr>`).join("");
+
+      $("thead").onclick = (e) => {
+        const th = e.target.closest("th");
+        if (!th) return;
+        const key = th.dataset.key;
+        if (!key) return;
+        if (state.sortKey === key) state.sortDir = state.sortDir === "desc" ? "asc" : "desc";
+        else { state.sortKey = key; state.sortDir = key === "name" ? "asc" : "desc"; }
+        state.agg = aggregate(state.dim);
+        renderTable();
+        renderCharts();
+      };
+    }
+
+    function getTopMetric() {
+      return TOP_METRICS[state.topMetric] || TOP_METRICS.spend;
+    }
+
+    function topRankedRows(metricKey, limit = 12) {
+      return [...state.agg]
+        .filter((r) => Number.isFinite(r[metricKey]) && r[metricKey] > 0)
+        .sort((a, b) => b[metricKey] - a[metricKey])
+        .slice(0, limit);
+    }
+
+    function sharePct(value, total) {
+      if (!Number.isFinite(value) || !Number.isFinite(total) || total <= 0) return NaN;
+      return value / total;
+    }
+
+    function renderCharts() {
+      const metric = getTopMetric();
+      const metricKey = metric.key;
+      const top = topRankedRows(metricKey, 12);
+      const totalMetric = state.agg.reduce((s, r) => s + (Number.isFinite(r[metricKey]) ? r[metricKey] : 0), 0);
+      const labels = top.map((r) => r.name);
+      const values = top.map((r) => +Number(r[metricKey]).toFixed(2));
+      const shares = top.map((r) => sharePct(r[metricKey], totalMetric));
+      const roas0 = top.map((r) => Number.isFinite(r.roas0) ? +(r.roas0 * 100).toFixed(2) : 0);
+      const roas7 = top.map((r) => Number.isFinite(r.roas7) ? +(r.roas7 * 100).toFixed(2) : 0);
+
+      const dimLabel = { os: "系统", channel: "渠道", country: "国家" }[state.dim];
+      $("chartTitle").textContent = `${metric.label}分布 · Top ${labels.length} ${dimLabel}`;
+
+      if (state.spendChart) state.spendChart.destroy();
+      if (state.roasChart) state.roasChart.destroy();
+
+      const valueAxis = {
+        grid: { color: "#eef2f6" },
+        ticks: {
+          color: "#5b6b7c",
+          callback: (v) => {
+            if (metricKey === "spend" || metricKey === "rev7") {
+              return Math.abs(v) >= 1000 ? "$" + Math.round(v).toLocaleString() : "$" + v;
+            }
+            return Number(v).toLocaleString();
+          },
+        },
+      };
+      const catAxis = {
+        grid: { color: "#eef2f6" },
+        ticks: { color: "#5b6b7c", maxRotation: 0 },
+      };
+      const horizontal = labels.length > 6;
+
+      state.spendChart = new Chart($("spendChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: metric.label,
+            data: values,
+            backgroundColor: "#0f6b5c",
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: horizontal ? "y" : "x",
+          layout: {
+            padding: horizontal
+              ? { right: 88 }
+              : { top: 22 },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const i = ctx.dataIndex;
+                  const raw = top[i]?.[metricKey];
+                  const pct = shares[i];
+                  const pctText = Number.isFinite(pct) ? `（${(pct * 100).toFixed(1)}%）` : "";
+                  return `${metric.label}: ${metric.fmt(raw)}${pctText}`;
+                },
+              },
+            },
+          },
+          scales: horizontal
+            ? { x: valueAxis, y: catAxis }
+            : { x: catAxis, y: valueAxis },
+        },
+        plugins: [{
+          id: "valueShareLabels",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = "600 11px IBM Plex Sans, Segoe UI, sans-serif";
+            ctx.fillStyle = "#5b6b7c";
+            meta.data.forEach((el, i) => {
+              const raw = top[i]?.[metricKey];
+              const pct = shares[i];
+              if (!Number.isFinite(raw)) return;
+              const pctText = Number.isFinite(pct) ? ` ${(pct * 100).toFixed(1)}%` : "";
+              const text = `${metric.fmt(raw)}${pctText}`;
+              const { x, y } = el.tooltipPosition();
+              if (horizontal) {
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(text, x + 6, y);
+              } else {
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(text, x, y - 4);
+              }
+            });
+            ctx.restore();
+          },
+        }],
+      });
+
+      state.roasChart = new Chart($("roasChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "ROAS D0 (%)", data: roas0, backgroundColor: "#1f4e79", borderRadius: 4 },
+            { label: "ROAS D7 (%)", data: roas7, backgroundColor: "#c47a1a", borderRadius: 4 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "top", labels: { boxWidth: 12 } } },
+          scales: {
+            x: { ticks: { color: "#5b6b7c", maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+            y: { ticks: { color: "#5b6b7c", callback: (v) => v + "%" }, grid: { color: "#eef2f6" } },
+          },
+        },
+      });
+    }
+
+    /** Monday-start week key = week start date YYYY-MM-DD */
+    function periodKey(dateStr, grain) {
+      if (!dateStr) return null;
+      if (grain === "day") return dateStr;
+      const parts = dateStr.split("-").map(Number);
+      if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return null;
+      const [y, m, d] = parts;
+      if (grain === "month") return `${y}-${String(m).padStart(2, "0")}`;
+      const dt = new Date(y, m - 1, d);
+      if (isNaN(dt.getTime())) return null;
+      const dow = (dt.getDay() + 6) % 7;
+      dt.setDate(dt.getDate() - dow);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    }
+
+    function formatPeriodLabel(key, grain) {
+      if (!key) return "";
+      if (grain === "month") {
+        const [y, m] = key.split("-");
+        return `${y}-${m}`;
+      }
+      if (grain === "week") {
+        const [, m, d] = key.split("-");
+        return `${m}-${d}周`;
+      }
+      const [, m, d] = key.split("-");
+      return `${m}-${d}`;
+    }
+
+    function grainLabel(grain) {
+      return { day: "分日", week: "分周", month: "分月" }[grain] || grain;
+    }
+
+    function metricPoint(agg, metricKey) {
+      const d = derive(agg);
+      const v = d[metricKey];
+      return Number.isFinite(v) ? v : null;
+    }
+
+    function buildTrendData() {
+      const grain = state.trendGrain;
+      const metricKey = state.trendMetric;
+      const seriesMode = state.trendSeries;
+      const dim = state.dim;
+      const dimLabel = { os: "系统", channel: "渠道", country: "国家" }[dim];
+
+      const byPeriodTotal = new Map();
+      const byPeriodDim = new Map();
+      const dimTotals = new Map();
+
+      for (const r of state.filtered) {
+        const pk = periodKey(r.date, grain);
+        if (!pk) continue;
+        if (!byPeriodTotal.has(pk)) byPeriodTotal.set(pk, emptyAgg());
+        addTo(byPeriodTotal.get(pk), r);
+
+        if (seriesMode === "dim") {
+          const name = r[dim] || "unknown";
+          if (!byPeriodDim.has(pk)) byPeriodDim.set(pk, new Map());
+          const m = byPeriodDim.get(pk);
+          if (!m.has(name)) m.set(name, emptyAgg());
+          addTo(m.get(name), r);
+          if (!dimTotals.has(name)) dimTotals.set(name, emptyAgg());
+          addTo(dimTotals.get(name), r);
+        }
+      }
+
+      const periods = [...byPeriodTotal.keys()].sort();
+      const labels = periods.map((p) => formatPeriodLabel(p, grain));
+
+      let seriesNames = ["合计"];
+      if (seriesMode === "dim") {
+        const ranked = [...dimTotals.entries()]
+          .map(([name, a]) => ({ name, ...derive(a) }))
+          .sort((a, b) => {
+            const av = Number.isFinite(a[metricKey]) ? a[metricKey] : (Number.isFinite(a.spend) ? a.spend : 0);
+            const bv = Number.isFinite(b[metricKey]) ? b[metricKey] : (Number.isFinite(b.spend) ? b.spend : 0);
+            return bv - av;
+          })
+          .slice(0, 8)
+          .map((x) => x.name);
+        seriesNames = ["合计", ...ranked];
+      }
+
+      const series = seriesNames.map((name) => {
+        const data = periods.map((pk) => {
+          if (name === "合计") return metricPoint(byPeriodTotal.get(pk), metricKey);
+          const cell = byPeriodDim.get(pk)?.get(name);
+          return cell ? metricPoint(cell, metricKey) : null;
+        });
+        return { name, data };
+      });
+
+      return { periods, labels, series, dimLabel, grain, metricKey };
+    }
+
+    function renderTrend() {
+      const metric = TREND_METRICS[state.trendMetric] || TREND_METRICS.spend;
+      const built = buildTrendData();
+      const { labels, series, dimLabel, grain } = built;
+
+      $("trendTitle").textContent =
+        `${grainLabel(grain)}趋势 · ${metric.label}` +
+        (state.trendSeries === "dim" ? `（拆${dimLabel}）` : "");
+
+      if (state.trendChart) state.trendChart.destroy();
+
+      const isPct = metric.kind === "pct";
+      const chartValues = series.map((s) => ({
+        ...s,
+        chartData: s.data.map((v) => (v == null ? null : isPct ? +(v * 100).toFixed(2) : +Number(v).toFixed(2))),
+      }));
+
+      state.trendChart = new Chart($("trendChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: chartValues.map((s, i) => ({
+            label: s.name,
+            data: s.chartData,
+            borderColor: TREND_COLORS[i % TREND_COLORS.length],
+            backgroundColor: TREND_COLORS[i % TREND_COLORS.length],
+            borderWidth: s.name === "合计" ? 2.5 : 1.75,
+            pointRadius: labels.length > 40 ? 0 : labels.length > 20 ? 2 : 3,
+            pointHoverRadius: 4,
+            tension: 0.25,
+            spanGaps: false,
+          })),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              position: "top",
+              labels: { boxWidth: 12, color: "#5b6b7c" },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const raw = series[ctx.datasetIndex]?.data[ctx.dataIndex];
+                  if (raw == null || !Number.isFinite(raw)) return `${ctx.dataset.label}: —`;
+                  return `${ctx.dataset.label}: ${metric.fmt(raw)}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#5b6b7c",
+                maxRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: grain === "day" ? 16 : 20,
+              },
+              grid: { display: false },
+            },
+            y: {
+              ticks: {
+                color: "#5b6b7c",
+                callback: (v) => {
+                  if (isPct) return v + "%";
+                  if (metric.kind === "money") {
+                    return Math.abs(v) >= 1000 ? "$" + Math.round(v).toLocaleString() : "$" + v;
+                  }
+                  return Number(v).toLocaleString();
+                },
+              },
+              grid: { color: "#eef2f6" },
+            },
+          },
+        },
+      });
+
+      const head = ["周期", ...series.map((s) => escapeHtml(s.name))];
+      $("trendThead").innerHTML = `<tr>${head.map((h) => `<th style="cursor:default">${h}</th>`).join("")}</tr>`;
+      $("trendTbody").innerHTML = built.periods.map((pk, i) => {
+        const cells = [
+          `<td style="text-align:left">${escapeHtml(formatPeriodLabel(pk, grain))}<span class="muted" style="margin-left:6px;font-size:11px">${escapeHtml(pk)}</span></td>`,
+          ...series.map((s) => {
+            const v = s.data[i];
+            return `<td>${v == null || !Number.isFinite(v) ? "—" : metric.fmt(v)}</td>`;
+          }),
+        ];
+        return `<tr>${cells.join("")}</tr>`;
+      }).join("");
+    }
+
+    function renderAll() {
+      state.agg = aggregate(state.dim);
+      renderAudit();
+      renderKpis();
+      renderTable();
+      renderCharts();
+      renderTrend();
+    }
+
+    function exportCsv() {
+      const dimLabel = { os: "系统", channel: "渠道", country: "国家" }[state.dim];
+      const headers = COLUMNS.map((c) => (c.key === "name" ? dimLabel : c.label));
+      const lines = [headers.join(",")];
+      for (const r of state.agg) {
+        const vals = COLUMNS.map((c) => {
+          const v = r[c.key];
+          if (c.key === "name") return `"${String(v).replace(/"/g, '""')}"`;
+          if (!Number.isFinite(v)) return "";
+          if (c.key.startsWith("roas") || c.key.startsWith("payRate")) return (v * 100).toFixed(4);
+          return String(v);
+        });
+        lines.push(vals.join(","));
+      }
+      const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `report_${state.dim}_${$("dateFrom").value}_${$("dateTo").value}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    drop.addEventListener("click", () => fileInput.click());
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("dragover"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      drop.classList.remove("dragover");
+      const f = e.dataTransfer.files?.[0];
+      if (f) handleFile(f);
+    });
+    fileInput.addEventListener("change", () => handleFile(fileInput.files?.[0]));
+    $("applyBtn").addEventListener("click", applyFilters);
+    $("fullRangeBtn").addEventListener("click", setFullRange);
+    $("last7Btn").addEventListener("click", () => setLastNDays(7));
+    $("exportBtn").addEventListener("click", exportCsv);
+    $("search").addEventListener("input", renderTable);
+    $("filterOrganic").addEventListener("change", applyFilters);
+    $("filterRegion").addEventListener("change", applyFilters);
+    $("topMetric").addEventListener("change", () => {
+      state.topMetric = $("topMetric").value;
+      saveUiPrefs();
+      renderCharts();
+    });
+    function refreshTrendFromControls() {
+      state.trendGrain = $("trendGrain").value;
+      state.trendMetric = $("trendMetric").value;
+      state.trendSeries = $("trendSeries").value;
+      saveUiPrefs();
+      renderTrend();
+    }
+    $("trendGrain").addEventListener("change", refreshTrendFromControls);
+    $("trendMetric").addEventListener("change", refreshTrendFromControls);
+    $("trendSeries").addEventListener("change", refreshTrendFromControls);
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.dim = btn.dataset.dim;
+        state.sortKey = "spend";
+        state.sortDir = "desc";
+        saveUiPrefs();
+        renderAll();
+      });
+    });
+
+    restoreCachedWorkbook();
+
+  </script>
+</body>
+</html>

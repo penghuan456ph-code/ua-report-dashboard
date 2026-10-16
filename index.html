@@ -2,12 +2,142 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=af-daily-report.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AF 日报</title>
-  <link rel="canonical" href="af-daily-report.html" />
+  <title>A101 报表入口</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5b6b7c;
+      --line: #e2e8ef;
+      --accent: #1d4f91;
+      --font: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 36px 20px 64px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    th {
+      background: #eef2f6;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: none; }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    a:hover { text-decoration: underline; }
+    .name { font-weight: 600; }
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .path {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
-  <p>跳转到 <a href="af-daily-report.html">AF 日报 · Yaahlan / Yaha</a>…</p>
+  <div class="wrap">
+    <h1>A101 报表入口</h1>
+    <p class="sub">线上固定入口（GitHub Pages）。本地也可仓库根目录执行 <code>python3 -m http.server 8765</code> 后访问 <code>http://127.0.0.1:8765/</code>。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36%">报表名称</th>
+          <th>链接</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="name">AF 日报</div>
+            <div class="note">AppsFlyer Cohort · Yaahlan / Yaha 近三日</div>
+            <div class="path">af-daily-report.html</div>
+          </td>
+          <td><a href="af-daily-report.html">https://penghuan456ph-code.github.io/ua-report-dashboard/af-daily-report.html</a></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="name">Ads 日报</div>
+            <div class="note">Ads 投后口径 · Yaahlan / Yaha 近三日</div>
+            <div class="path">ads-daily-report.html</div>
+          </td>
+          <td><a href="ads-daily-report.html">https://penghuan456ph-code.github.io/ua-report-dashboard/ads-daily-report.html</a></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="name">Looker 上传分析面板</div>
+            <div class="note">手动上传周报 Excel · 拆系统 / 拆渠道 / 拆国家</div>
+            <div class="path">looker-upload-dashboard.html</div>
+          </td>
+          <td><a href="looker-upload-dashboard.html">https://penghuan456ph-code.github.io/ua-report-dashboard/looker-upload-dashboard.html</a></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="name">Yaahlan 分月增长系数</div>
+            <div class="note">Ads 口径 · 整体 / 纯广告 / 国家·渠道筛选</div>
+            <div class="path">yaahlan-growth-coef-monthly.html</div>
+          </td>
+          <td><a href="yaahlan-growth-coef-monthly.html">https://penghuan456ph-code.github.io/ua-report-dashboard/yaahlan-growth-coef-monthly.html</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <footer>
+      入口页：<a href="index.html">https://penghuan456ph-code.github.io/ua-report-dashboard/</a>
+    </footer>
+  </div>
 </body>
 </html>
